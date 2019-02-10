@@ -2,6 +2,7 @@ import cv2
 
 
 class ProcessFrame:
+    """Perform various image processing functions."""
     def __init__(self, im):
         self.im = im
         self.show = im
@@ -10,8 +11,8 @@ class ProcessFrame:
         self.h = 0
         self.w = 0
         self.thresh = []
-        self.cntr_x = 0
-        self.cntr_y = 0
+        self.center_x = 0
+        self.center_y = 0
 
     def prep_image(self):
         """Prepare image for contour detection."""
@@ -30,40 +31,41 @@ class ProcessFrame:
     def get_contour(self):
         """Detect and position cross hairs on center of largest contour."""
         # Find Contours.
-        cnts, _ = cv2.findContours(self.thresh.copy(),
+        contours, _ = cv2.findContours(self.thresh.copy(),
                                    cv2.RETR_TREE,
                                    cv2.CHAIN_APPROX_NONE)
 
-        if len(cnts) > 0:
+        if len(contours) > 0:
             # Isolate the largest contour.
-            cnt = max(cnts, key=cv2.contourArea)
+            contour = max(contours, key=cv2.contourArea)
             # Get data from largest contour.
-            mnt = cv2.moments(cnt)
+            mnt = cv2.moments(contour)
             # Center coordinates of largest contour.
-            self.cntr_x = int(mnt['m10'] / mnt['m00'])
-            self.cntr_y = int(mnt['m01'] / mnt['m00'])
+            self.center_x = int(mnt['m10'] / mnt['m00'])
+            self.center_y = int(mnt['m01'] / mnt['m00'])
             # Draw contours
-            # cv2.drawContours(self.show, cnt, -1, (0, 255, 0), 1)
+            # cv2.drawContours(self.show, contour, -1, (0, 255, 0), 1)
             # Draw "cross hairs" on center of contour.
-            # cv2.line(self.show, (self.cntr_x, 0), (self.cntr_x, self.h), (0, 0, 255), 2)
-            # cv2.line(self.show, (0, self.cntr_y), (self.w, self.cntr_y), (0, 0, 255), 2)
+            # cv2.line(self.show, (self.center_x, 0), (self.center_x, self.h), (0, 0, 255), 2)
+            # cv2.line(self.show, (0, self.center_y), (self.w, self.center_y), (0, 0, 255), 2)
 
     def contour_pos(self):
         """Detect position of contour relative to middle of screen."""
         vert_mid = self.w / 2  # Middle of screen.
 
-        if (vert_mid - 50) <= self.cntr_x <= (vert_mid + 50):
+        if (vert_mid - 50) <= self.center_x <= (vert_mid + 50):
             return "C"
 
         # If middle of contour is too far right.
-        if self.cntr_x < (vert_mid - 50):
+        if self.center_x < (vert_mid - 50):
             return "R"
 
         # If center of contour is too far left:
-        if self.cntr_x > (vert_mid + 50):
+        if self.center_x > (vert_mid + 50):
             return "L"
 
     def position_text(self, direction):
+        """Place text on image."""
         # Settings for font, position, color, etc.
         # Assigned to variables to act as labels for each value.
         font = cv2.FONT_HERSHEY_SIMPLEX
