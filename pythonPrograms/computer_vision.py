@@ -1,9 +1,9 @@
 import cv2
-
 from pythonPrograms.process_frame import ProcessFrame
 
 
 class ComputerVision:
+
     def __init__(self, camera=int):
         self.cap = cv2.VideoCapture(camera)
 
