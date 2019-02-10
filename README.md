@@ -10,17 +10,12 @@ which direction to turn towards.
 
 Various sensors will be used to make the rover safe. These sensors include,
 but are not limited to 
- ultrasonic,
- lidar,
- infrared,
- temperature,
- humidity,
- gyroscopic,
- and acceleration sensors. These sensors add to the shortcomings of computer 
- vision. Computer vision is good at finding very specific objects but fails
- at detecting potential hazards such as trees, vehicles, animals, or people.
- This shortcoming requires the rover to be equipped with sensors that can 
- detect a broad range of potential hazards. 
+ultrasonic, lidar, infrared, temperature, humidity, gyroscopic,
+and acceleration sensors. These sensors add to the shortcomings of computer 
+vision. Computer vision is good at finding very specific objects but fails
+at detecting potential hazards such as trees, vehicles, animals, or people.
+This shortcoming requires the rover to be equipped with sensors that can 
+detect a broad range of potential hazards. 
 
 
 
