@@ -40,6 +40,13 @@ A goal for the overall style of this project should be to keep code clean
 and simple. This will make code re-working in the future much easier and 
 enjoyable.
 
+## Naming Conventions
+Folder names should follow the camelCase naming convention. (arduinoPrograms)
+
+File names should be all lowercase, words separated by underscores.
+(motor_settings.ino)
+
+
 ### Dependencies
 [opencv-python](https://github.com/skvark/opencv-python) and 
 [Numpy](https://github.com/numpy/numpy) are dependencies for running the
