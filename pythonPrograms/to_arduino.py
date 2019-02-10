@@ -1,5 +1,6 @@
 from pythonPrograms.computer_vision import ComputerVision
 
+
 # This will be a bool returned from the arduino ensuring sensors are clear.
 sensors_clear = True  # Also inform the operator that it is halted when False.
 operator_starts = True  # True when the operator has "unlocked" the robot. Ready for use.
