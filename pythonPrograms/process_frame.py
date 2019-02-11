@@ -4,21 +4,21 @@ import cv2
 class ProcessFrame:
     """Perform various image processing functions."""
 
-    def __init__(self, im):
-        self.im = im
-        self.show = im
+    def __init__(self, image):
+        self.image = image
+        self.show = image
         self.thresh_val = 59
         self.vert_border = 250
-        self.h = 0
-        self.w = 0
+        self.height = 0
+        self.width = 0
         self.thresh = []
         self.center_x = 0
         self.center_y = 0
 
     def prep_image(self):
         """Prepare image for contour detection."""
-        self.h, self.w, _ = self.im.shape
-        gray = cv2.cvtColor(self.im, cv2.COLOR_BGR2GRAY)
+        self.height, self.width, _ = self.image.shape
+        gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
         # Adaptive threshold is used to balance shadows and
         # inconsistencies in the frame.
@@ -36,7 +36,7 @@ class ProcessFrame:
                                        cv2.RETR_TREE,
                                        cv2.CHAIN_APPROX_NONE)
 
-        if len(contours) > 0:
+        if contour:
             # Isolate the largest contour.
             contour = max(contours, key=cv2.contourArea)
             # Get data from largest contour.
@@ -47,7 +47,7 @@ class ProcessFrame:
 
     def contour_pos(self):
         """Detect position of contour relative to middle of screen."""
-        vert_mid = self.w / 2  # Middle of screen.
+        vert_mid = self.width / 2  # Middle of screen.
 
         if (vert_mid - 50) <= self.center_x <= (vert_mid + 50):
             return "C"

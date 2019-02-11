@@ -6,15 +6,15 @@ from pythonPrograms.computer_vision import ComputerVision
 # The safety measures put in place should be coded into the arduino.
 # The arduino will have faster, more reliable readings and ability to stop
 # the robot.
-sensors_clear = True  # Also inform the operator that it is halted when False.
-operator_starts = True  # True when the operator has "unlocked" the robot. Ready for use.
+# sensors_clear = True  # Also inform the operator that it is halted when False.
+# operator_starts = True  # True when the operator has "unlocked" the robot. Ready for use.
 
 
 def guide_steering():
     """Get information about hose location, make steering decisions."""
     # Create an instance of ComputerVision using camera 0 (web/rpi cam).
-    cv = ComputerVision(0)
-    line_pos = cv.find_line()
+    c_v = ComputerVision(0)
+    line_pos = c_v.find_line()
 
     if line_pos == "R":  # Right
         # Send signal to go right because the line is too far right.

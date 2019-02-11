@@ -10,10 +10,10 @@ class ComputerVision:
     def find_line(self):
         """Detect line, return line position."""
         _, frame = self.cap.read()  # Read frame from camera.
-        pf = ProcessFrame(frame)  # Create instance of ProcessFrame
-        pf.prep_image()  # Prepare the frame.
-        pf.get_contour()  # Detect contours in frame.
-        return pf.contour_pos()  # Return contour position in frame.
+        p_f = ProcessFrame(frame)  # Create instance of ProcessFrame
+        p_f.prep_image()  # Prepare the frame.
+        p_f.get_contour()  # Detect contours in frame.
+        return p_f.contour_pos()  # Return contour position in frame.
 
     def cleanup(self):
         """Release the camera. Perform cleanup."""

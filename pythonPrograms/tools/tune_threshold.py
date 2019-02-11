@@ -1,21 +1,22 @@
 import cv2
 
 
-def nothing(x):
-    pass
+def nothing():
+    """Mock function for trackbar."""
+    # pass
 
 
-cap = cv2.VideoCapture(0)
+CAP = cv2.VideoCapture(0)
 cv2.namedWindow('Binary Threshold')
 cv2.createTrackbar('Threshold Value', 'Binary Threshold', 0, 255, nothing)
-k1 = 0
-while k1 != 27:
-    _, im = cap.read()
-    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-    k1 = cv2.waitKey(1)
-    binary_thresh_val = cv2.getTrackbarPos('Threshold Value', 'Binary Threshold')
-    _, binary_thresh_img = cv2.threshold(im,
-                                         binary_thresh_val,
+KEY_PRESS = 0
+while KEY_PRESS != 27:
+    _, IMAGE = CAP.read()
+    IMAGE = cv2.cvtColor(IMAGE, cv2.COLOR_BGR2GRAY)
+    KEY_PRESS = cv2.waitKey(1)
+    BINARY_THRESH_VAL = cv2.getTrackbarPos('Threshold Value', 'Binary Threshold')
+    _, BINARY_THRESH_IMG = cv2.threshold(IMAGE,
+                                         BINARY_THRESH_VAL,
                                          255,
                                          cv2.THRESH_BINARY_INV)
-    cv2.imshow('Binary Threshold', binary_thresh_img)
+    cv2.imshow('Binary Threshold', BINARY_THRESH_IMG)
