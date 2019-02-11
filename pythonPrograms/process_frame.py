@@ -3,6 +3,7 @@ import cv2
 
 class ProcessFrame:
     """Perform various image processing functions."""
+
     def __init__(self, im):
         self.im = im
         self.show = im
@@ -32,8 +33,8 @@ class ProcessFrame:
         """Detect and position cross hairs on center of largest contour."""
         # Find Contours.
         contours, _ = cv2.findContours(self.thresh.copy(),
-                                   cv2.RETR_TREE,
-                                   cv2.CHAIN_APPROX_NONE)
+                                       cv2.RETR_TREE,
+                                       cv2.CHAIN_APPROX_NONE)
 
         if len(contours) > 0:
             # Isolate the largest contour.
@@ -43,11 +44,6 @@ class ProcessFrame:
             # Center coordinates of largest contour.
             self.center_x = int(mnt['m10'] / mnt['m00'])
             self.center_y = int(mnt['m01'] / mnt['m00'])
-            # Draw contours
-            # cv2.drawContours(self.show, contour, -1, (0, 255, 0), 1)
-            # Draw "cross hairs" on center of contour.
-            # cv2.line(self.show, (self.center_x, 0), (self.center_x, self.h), (0, 0, 255), 2)
-            # cv2.line(self.show, (0, self.center_y), (self.w, self.center_y), (0, 0, 255), 2)
 
     def contour_pos(self):
         """Detect position of contour relative to middle of screen."""
@@ -66,8 +62,6 @@ class ProcessFrame:
 
     def position_text(self, direction):
         """Place text on image."""
-        # Settings for font, position, color, etc.
-        # Assigned to variables to act as labels for each value.
         font = cv2.FONT_HERSHEY_SIMPLEX
         text_pos = (10, 100)
         font_scale = 1
