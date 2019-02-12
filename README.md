@@ -1,7 +1,9 @@
-# What is a *Rowbot*?
-*Rowbot* is an autonomous tractor, designed specifically for orchards. 
+# What is a *Rowbot?
+
+*Rowbot* is an autonomous tractor, designed specifically for orchards.
 
 ## What makes it autonomous?
+
 Autonomy is accomplished by equipping the rover with cameras that can be used
 for computer vision. The cameras will be used to identify a hose that runs
 along the base of all the trees in a row. Data about the location of the hose,
