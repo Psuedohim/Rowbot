@@ -1,124 +1,111 @@
-// using namespace std;
+// in1, ..., in4 refers to the "in" pins on the L298N motor driver used for 
+// the stepper motors.
+int in1 = 1;
+int in2 = 2;
+int in3 = 3;
+int in4 = 4;
+int step_delay = 20;  // Delay between each step.
 
-int pin1 = 7;
-int pin2 = 8;
-int pin3 = 6;
-int pin4 = 5;
-int step_delay = 20;
-
-
-void forward_step_1() {
-  // Perform the 1st step necessary.
-digitalWrite(pin1, LOW);
-digitalWrite(pin2, LOW);
-digitalWrite(pin3, HIGH);
-digitalWrite(pin4, HIGH);
+void forward_step_1()
+{ // Perform the 1st step necessary for rotating forwards.
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, HIGH);
 }
 
-void forward_step_2() {
-  // Perform the 2nd step necessary.
-digitalWrite(pin1, LOW);
-digitalWrite(pin2, HIGH);
-digitalWrite(pin3, HIGH);
-digitalWrite(pin4, LOW);
+void backward_step_1()
+{ // Perform the 1st step necessary for rotating backwards.
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
 }
 
-void forward_step_3() {
-  // Perform the 3rd step necessary.
-digitalWrite(pin1, HIGH);
-digitalWrite(pin2, HIGH);
-digitalWrite(pin3, LOW);
-digitalWrite(pin4, LOW);
+void step_2()
+{ // Perform the 2nd step necessary for rotating forwards or backwards.
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
 }
 
-void forward_step_4() {
-  // Perform the 4th step necessary.
-digitalWrite(pin1, HIGH);
-digitalWrite(pin2, LOW);
-digitalWrite(pin3, LOW);
-digitalWrite(pin4, HIGH);
+void forward_step_3()
+{ // Perform the 3rd step necessary for rotating forwards.
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
 }
 
-// Begin code for running backwards.
-void backward_step_1() {
-  // Perform the 1st step necessary.
-digitalWrite(pin1, HIGH);
-digitalWrite(pin2, LOW);
-digitalWrite(pin3, HIGH);
-digitalWrite(pin4, LOW);
+void backward_step_3()
+{ // Perform the 3rd step necessary for rotating backwards.
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
 }
 
-void backward_step_2() {
-  // Perform the 2nd step necessary.
-digitalWrite(pin1, LOW);
-digitalWrite(pin2, HIGH);
-digitalWrite(pin3, HIGH);
-digitalWrite(pin4, LOW);
+void step_4()
+{ // Perform the 4th step necessary for rotating forwards or backwards.
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
 }
 
-void backward_step_3() {
-  // Perform the 3rd step necessary.
-digitalWrite(pin1, LOW);
-digitalWrite(pin2, HIGH);
-digitalWrite(pin3, LOW);
-digitalWrite(pin4, HIGH);
-}
-
-void backward_step_4() {
-  // Perform the 4th step necessary.
-digitalWrite(pin1, HIGH);
-digitalWrite(pin2, LOW);
-digitalWrite(pin3, LOW);
-digitalWrite(pin4, HIGH);
-}
-
-void cycle_forward(int ms_delay) {
-  // perform each step with desired delay, delay affecting speed of motor.
+void cycle_forward(int ms_delay)
+{ // Perform each step with desired delay.
+  // The ms_delay variable is passed in when the function is called.
   forward_step_1();
   delay(ms_delay);
-  forward_step_2();
+  step_2();
   delay(ms_delay);
   forward_step_3();
   delay(ms_delay);
-  forward_step_4();
+  step_4();
   delay(ms_delay);
 }
 
-void cycle_backward(int ms_delay) {
-  // perform each step with desired delay, delay affecting speed of motor.
+void cycle_backward(int ms_delay)
+{ // Perform each step with desired delay.
+  // The ms_delay variable is passed in when the function is called.
   backward_step_1();
   delay(ms_delay);
-  backward_step_2();
+  step_2();
   delay(ms_delay);
   backward_step_3();
   delay(ms_delay);
-  backward_step_4();
+  step_4();
   delay(ms_delay);
 }
 
-void one_forward_revolution() {
-  // The 12V motors used have a 200 step per revolution ratio.
-  // If one cycle is 4 steps, one revolution will require 50 cycles.
-  for (int cycle = 0; cycle <= 50; cycle++) {
+void one_forward_revolution()
+{ // Rotate 360° forward. 
+  for (int cycle = 0; cycle <= 50; cycle++)
+  { // Perform 50 cycles forward.
     cycle_forward(step_delay);
   }
 }
 
-void one_backward_revolution() {
-  // For explanation, see one_forward_revolution above.
-  for (int cycle = 0; cycle <= 50; cycle++) {
+void one_backward_revolution()
+{ // Rotate 360° backward.
+  for (int cycle = 0; cycle <= 50; cycle++)
+  { // Perform 50 cycles backwards.
     cycle_backward(step_delay);
   }
 }
 
-void setup() {
-pinMode(pin1, OUTPUT);
-pinMode(pin2, OUTPUT);
-pinMode(pin3,OUTPUT);
-pinMode(pin4,OUTPUT);
+void setup()
+{ // Set pins to accept input or output.
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
 }
 
-void loop() {
+void loop()
+{
   one_forward_revolution();
   one_backward_revolution();
 }
