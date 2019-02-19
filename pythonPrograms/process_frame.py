@@ -36,7 +36,7 @@ class ProcessFrame:
                                        cv2.RETR_TREE,
                                        cv2.CHAIN_APPROX_NONE)
 
-        if contour:
+        if contours:
             # Isolate the largest contour.
             contour = max(contours, key=cv2.contourArea)
             # Get data from largest contour.

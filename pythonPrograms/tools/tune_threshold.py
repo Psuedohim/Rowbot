@@ -6,7 +6,7 @@ def nothing():
     # pass
 
 
-CAP = cv2.VideoCapture(0)
+CAP = cv2.VideoCapture(1)
 cv2.namedWindow('Binary Threshold')
 cv2.createTrackbar('Threshold Value', 'Binary Threshold', 0, 255, nothing)
 KEY_PRESS = 0
