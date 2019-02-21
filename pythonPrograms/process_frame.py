@@ -42,8 +42,11 @@ class ProcessFrame:
             # Get data from largest contour.
             mnt = cv2.moments(contour)
             # Center coordinates of largest contour.
-            self.center_x = int(mnt['m10'] / mnt['m00'])
-            self.center_y = int(mnt['m01'] / mnt['m00'])
+            try:  # Try to calculate center of contour.
+                self.center_x = int(mnt['m10'] / mnt['m00'])
+                self.center_y = int(mnt['m01'] / mnt['m00'])
+            except ZeroDivisionError:  # Catch division by zero.
+                pass  # Continue on if division by zero occurs.
 
     def contour_pos(self):
         """Detect position of contour relative to middle of screen."""
