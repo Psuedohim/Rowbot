@@ -15,7 +15,7 @@ class ComputerVision:
         """Detect line, return line position."""
         self.frame = self.stream.read()  # Read frame from camera.
         p_f = ProcessFrame(self.frame)  # Create instance of ProcessFrame
-        p_f.prep_image()  # Prepare the frame.
+        p_f.start_prep_image()  # Prepare the frame.
         p_f.get_contour()  # Detect contours in frame.
         return p_f.contour_pos()  # Return contour position in frame.
 

@@ -1,4 +1,5 @@
 import cv2
+from threading import Thread
 
 
 class ProcessFrame:
@@ -6,7 +7,6 @@ class ProcessFrame:
 
     def __init__(self, image):
         self.image = image
-        self.show = image
         self.thresh_val = 59
         self.vert_border = 250
         self.height = 0
@@ -15,6 +15,16 @@ class ProcessFrame:
         self.center_x = 0
         self.center_y = 0
 
+    def start_prep_image(self):
+        """Create a thread for image processing."""
+        prep_thread = Thread(target=self.prep_image,
+                             name="Prepare Image",
+                             args=(),
+                             daemon=True)
+                            
+        prep_thread.start()
+        return self
+        
     def prep_image(self):
         """Prepare image for contour detection."""
         self.height, self.width, _ = self.image.shape
@@ -62,19 +72,3 @@ class ProcessFrame:
         # If center of contour is too far left:
         if self.center_x > (vert_mid + 50):
             return "L"
-
-    def position_text(self, direction):
-        """Place text on image."""
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        text_pos = (10, 100)
-        font_scale = 1
-        font_color = (0, 0, 255)
-        line_type = 2
-
-        cv2.putText(self.show,
-                    direction,
-                    text_pos,
-                    font,
-                    font_scale,
-                    font_color,
-                    line_type)
