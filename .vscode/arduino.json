@@ -1,6 +1,0 @@
-{
-    "programmer": "AVR ISP",
-    "board": "arduino:avr:uno",
-    "port": "/dev/cu.usbmodem14101",
-    "sketch": "arduinoFiles/src/servo_motors.ino"
-}
