@@ -1,18 +1,20 @@
 import cv2
-from pythonPrograms.process_frame import ProcessFrame
-# A comment
+import pythonPrograms.image_processes as im_proc
 
 
-class ComputerVision:
-    def __init__(self, camera=int):
-        self.cap = cv2.VideoCapture(camera)
+def find_line(image):
+    """Find line, return location."""
+    threshold = im_proc.threshold_image(image)
+    largest_contour = im_proc.largest_contour(threshold)
+    center_x, center_y = im_proc.center_of_contour(largest_contour)
+    print(im_proc.contour_location(image, center_x, center_y))
 
-    def find_line(self):
-        _, frame = self.cap.read()  # Read frame from camera.
-        pf = ProcessFrame(frame)  # Create instance of ProcessFrame
-        pf.prep_image()  # Prepare the frame.
-        pf.get_contour()  # Detect contours in frame.
-        return pf.contour_pos()  # Return contour position in frame.
+# class ComputerVision:
+#     def __init__(self, camera=int):
+#         self.cap = cv2.VideoCapture(camera)
 
-    def cleanup(self):
-        self.cap.release()
+#     def find_line(self):
+
+
+#     def cleanup(self):
+#         self.cap.release()

@@ -1,5 +1,5 @@
 import cv2
-from process_frame import ProcessFrame
+# from process_frame import ProcessFrame
 
 
 CAP = cv2.VideoCapture(1)
