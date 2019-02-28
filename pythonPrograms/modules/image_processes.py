@@ -25,12 +25,13 @@ def threshold_image(image):
 def largest_contour(thresh_image):
     """Detect center of largest contour."""
     # Find all contours in image threshold.
-    contours, _ = cv2.findContours(thresh_image.copy(),
+    contours, _ = cv2.findContours(thresh_image,
                                    cv2.RETR_TREE,
                                    cv2.CHAIN_APPROX_NONE)
 
-    # Isolate and return the largest contour.
-    return max(contours, key=cv2.contourArea)
+    if contours:
+        # Isolate and return the largest contour.
+        return max(contours, key=cv2.contourArea)
 
 
 def center_of_contour(contour):
@@ -62,3 +63,12 @@ def contour_location(image, center_x, center_y):
     # If center of contour is too far left:
     if center_x > (image_middle + 50):
         return "L"
+
+
+def find_line(image):
+    """Find line, return location relative to screen center."""
+    threshold = threshold_image(image)
+    largest_contour = largest_contour(threshold)
+    center_x, center_y = center_of_contour(largest_contour)
+    # Print location of line to console for user.
+    print(contour_location(image, center_x, center_y))

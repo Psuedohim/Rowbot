@@ -1,19 +1,19 @@
 import cv2
+import modules.image_processes as im_proc
 # from process_frame import ProcessFrame
 
 
-CAP = cv2.VideoCapture(1)
+CAP = cv2.VideoCapture(0)
 
-while cv2.waitKey(1) != ord('q'):
-    _, IMAGE = CAP.read()
-    PF = ProcessFrame(IMAGE)
-    PF.prep_IMAGEage()
-    PF.get_contour()
-    PF.contour_pos()
-    # Create window, set to fullscreen.
-    cv2.namedWindow("Frame", cv2.WND_PROP_FULLSCREEN)
-    cv2.setWindowProperty("Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-    cv2.imshow("Frame", PF.show)
+try:
+    while cv2.waitKey(1) != ord('q'):
+        _, IMAGE = CAP.read()
+        threshold = im_proc.threshold_image(IMAGE)
+        largest_contour = im_proc.largest_contour(threshold)
+        center_x, center_y = im_proc.center_of_contour(largest_contour)
+        print(im_proc.contour_location(IMAGE, center_x, center_y))
+
+except KeyboardInterrupt:
+    print("\nProgram closed by user.\n")
 
 CAP.release()  # Done with capture.
-cv2.destroyAllWindows()
