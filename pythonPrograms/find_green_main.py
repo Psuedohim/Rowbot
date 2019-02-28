@@ -8,9 +8,10 @@ CAP = cv2.VideoCapture(0)
 try:
     while cv2.waitKey(1) != ord('q'):
         _, image = CAP.read()
-        im_proc.find_line(image)
+        im_proc.find_green(image)
 
 except KeyboardInterrupt:
     print("\nProgram closed by user.\n")
 
-CAP.release()  # Done with capture.
+cv2.destroyAllWindows()
+CAP.release()  # Done with capture
