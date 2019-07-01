@@ -2,9 +2,9 @@ import socket
 import tkinter as tk
 
 
-class client:
+class Client:
 
-    def __init__(self, ip, port):
+    def __init__(self, ip, port="80"):  # Default port is 80.
         self._ip = ip
         self._port = port
     
@@ -59,7 +59,7 @@ class client:
     
     def _is_released(self, key):
         return self.pressed[key] == False
-        self.prev_pressed[key]
+        self.prev_pressed[key]  # Same as function above.
 
     def _create_ui(self):
         self.root = tk.Tk()
@@ -72,6 +72,17 @@ class client:
             self.root.bind("<KeyRelease-%s>" % char, self._released)
             self.pressed[char] = False
 
+    def _pressed(self, event):
+        self.pressed[event.char] = True
     
+    def _released(self, event):
+        self.pressed[event.char] = False
 
+    def run():
 
+# Testing
+ip = "10.0.0.6"
+port = "80"
+
+client = Client(ip, port)
+client.start()

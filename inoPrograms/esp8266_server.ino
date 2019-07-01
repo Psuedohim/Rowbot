@@ -7,7 +7,7 @@ int SERVER_PORT = 80;  // Match port on client side.
 byte incomingByte = 0;
 byte packetBuffer[512];
 
-ESP8266WebServer server(SERVER_PORT);  // Init server.
+WiFiUDP Udp;
 
 
 void parseInstructions() {
