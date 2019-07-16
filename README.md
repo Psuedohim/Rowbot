@@ -1,4 +1,4 @@
-# What is a *Rowbot?
+# What is a Rowbot?
 
 *Rowbot* is an autonomous tractor, designed specifically for orchards.
 
