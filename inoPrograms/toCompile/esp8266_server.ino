@@ -5,7 +5,7 @@
 // Create instances for WiFi usage.
 // IPAddress ClientIP(192, 168, 4, 2); // Set client IP.
 // IPAddress ServerIP(192, 168, 4, 1); // Set server IP.
-WiFiCredentials credentials;        // For WiFi credential retrieval.
+WiFiCredentials credentials; // For WiFi credential retrieval.
 WiFiUDP Udp;
 
 // Variables for WiFi communication and serial communication.
@@ -67,7 +67,7 @@ void setupWiFi()
 {
   WiFi.softAP(SSID, PASSWORD); // Setup access point from ESP8266.
   // IPAddress ip = WiFi.softAPIP();
-  Udp.begin(PORT);             // Begin UDP on defined port.
+  Udp.begin(PORT); // Begin UDP on defined port.
 }
 
 void moveForwards()
