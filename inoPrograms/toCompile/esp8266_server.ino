@@ -3,9 +3,9 @@
 #include "src/WiFiCredentials/WiFiCredentials.h"
 
 // Create instances for WiFi usage.
-// IPAddress ClientIP(192,168,4,2);  // Set client IP.
-// IPAddress ServerIP(192,168,4,1);  // Set server IP.
-WiFiCredentials credentials; // For WiFi credential retrieval.
+// IPAddress ClientIP(192, 168, 4, 2); // Set client IP.
+// IPAddress ServerIP(192, 168, 4, 1); // Set server IP.
+WiFiCredentials credentials;        // For WiFi credential retrieval.
 WiFiUDP Udp;
 
 // Variables for WiFi communication and serial communication.
@@ -66,6 +66,7 @@ void initOutputs()
 void setupWiFi()
 {
   WiFi.softAP(SSID, PASSWORD); // Setup access point from ESP8266.
+  // IPAddress ip = WiFi.softAPIP();
   Udp.begin(PORT);             // Begin UDP on defined port.
 }
 
@@ -139,6 +140,11 @@ void resetEngine()
   analogWrite(DrivePWM, 0);
   DrivePWMValue = 0;
 }
+void increment(int valToInc)
+{
+  if (valToInc < 255)
+    valToInc++;
+}
 
 void detectKeyPresses()
 {
@@ -184,9 +190,13 @@ void handlePinOutputs()
 
 void setup()
 {
-  // Serial.begin(BAUD_RATE); // Begin Serial communication on port 9600.
+  Serial.begin(BAUD_RATE); // Begin Serial communication on port 9600.
   initOutputs();
-  setupWiFi();
+  // setupWiFi();
+
+  WiFi.softAP(SSID, PASSWORD);
+  IPAddress ip = WiFi.softAPIP();
+  Udp.begin(PORT);
 }
 
 void loop()
