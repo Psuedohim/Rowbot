@@ -55,15 +55,15 @@ def contour_location(image, center_x, center_y):
 
     # If middle of contour is in-line with middle of screen.
     if (image_middle - 50) <= center_x <= (image_middle + 50):
-        return "C"
+        return 'C'
 
     # If middle of contour is too far right.
     if center_x < (image_middle - 50):
-        return "R"
+        return 'R'
 
     # If center of contour is too far left:
     if center_x > (image_middle + 50):
-        return "L"
+        return 'L'
 
 
 def filter_green(image):
@@ -101,11 +101,14 @@ def clean_filtered_image(mask_image):
 def find_line(image):
     """Find line, return location relative to screen center."""
     threshold = threshold_image(image)
+
     try:  # May result in error if no contours are detected.
         largest_contour = all_contours(threshold)[0]
         center_x, center_y = coordinates_of_contour(largest_contour)
         # Print location of line to console for user.
-        print(contour_location(image, center_x, center_y))
+        # print(contour_location(image, center_x, center_y))
+        return contour_location(image, center_x, center_y)
+
     except TypeError:
         print("\nNo lines found.")
         pass
