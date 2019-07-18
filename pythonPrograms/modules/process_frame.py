@@ -21,10 +21,10 @@ class ProcessFrame:
                              name="Prepare Image",
                              args=(),
                              daemon=True)
-                            
+
         prep_thread.start()
         return self
-        
+
     def prep_image(self):
         """Prepare image for contour detection."""
         self.height, self.width, _ = self.image.shape

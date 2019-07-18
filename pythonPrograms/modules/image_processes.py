@@ -117,7 +117,7 @@ def find_line(image):
 def find_green(image):
     # Filter green in image.
     filtered = filter_green(image)
-    try:  
+    try:
         # May result in TypeError if no contours are found.
         contours = all_contours(filtered)
         for contour in contours:
@@ -125,4 +125,3 @@ def find_green(image):
             print(center_x, center_y)
     except TypeError:
         print("\nNo contours found.")
-
