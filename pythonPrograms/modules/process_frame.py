@@ -73,7 +73,8 @@ class ProcessFrames:
         return frame
     
     def show_frame(self, frame_to_show):
-        while cv2.waitkey() 
+        cv2.imshow("Current Frame", frame_to_show)
+        # cv2.waitKey(0)  # Wait for key press to continue.
 
     def contour_pos(self, center_x, center_y):
         """Detect position of contour relative to center of frame."""
