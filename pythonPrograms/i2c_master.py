@@ -1,6 +1,6 @@
 import smbus
 import time
-from modules.process_frame_v2 import ProcessFrames 
+from modules.process_frame import ProcessFrames
 
 
 proc = ProcessFrames(0)
@@ -16,5 +16,6 @@ while boolToKeepRunning:
     biggest_contour = proc.biggest_contour(contours)
     center_x, center_y = proc.center_coordinates(biggest_contour)
     position = proc.contour_pos(center_x, center_x)
-    
+    crosshair_frame = proc.draw_crosshairs(raw_frame, center_x, center_y)
+    proc.show_frame(crosshair_frame)
     
