@@ -1,7 +1,7 @@
 #include <Wire.h>
 
 // Bytes coming from RockPi or a drive-manager device.
-#define ADDR 1  // Address for this device over I2C.
+#define ADDR 0x04 // Address for this device over I2C.
 
 // Define pinouts
 #define DriveEn 1
@@ -28,6 +28,7 @@ bool rightPressed = false;
 bool leftPressed = false;
 
 // Byte communication code.
+int incomingByte;
 const int FORWARDS_PRESSED = 1;
 const int FORWARDS_RELEASED = 2;
 const int BACKWARDS_PRESSED = 3;
@@ -48,14 +49,16 @@ void initOutputs()
   pinMode(DrivePWM, OUTPUT);
 }
 
-void increment(valToIncrement)
+void increment(int valToIncrement)
 {
-    if (valToIncrement < 255)
-        valToIncrement++;
+  // Increment parameter value by one.
+  if (valToIncrement < 255)
+    valToIncrement++;
 }
 
 void moveForwards()
 {
+  // Forward signal to motor driver.
   digitalWrite(DriveEn, HIGH);
   digitalWrite(DriveDir, HIGH);
   increment(DrivePWMValue);
@@ -65,6 +68,7 @@ void moveForwards()
 
 void moveBackwards()
 {
+  // Backward signal to motor driver.
   digitalWrite(DriveEn, HIGH);
   digitalWrite(DriveDir, LOW);
   increment(DrivePWMValue);
@@ -74,6 +78,7 @@ void moveBackwards()
 
 void turnRight()
 {
+  // Right turn signal to motor driver.
   if (analogRead(SteerPot) <= MaxSteerAngle) // If wheels not at max:
   {
     digitalWrite(SteerEn, HIGH);
@@ -86,6 +91,7 @@ void turnRight()
 
 void turnLeft()
 {
+  // Left turn signal to motor driver.
   if (analogRead(SteerPot) >= MinSteerAngle) // If wheels not at min:
   {
     digitalWrite(SteerEn, HIGH);
@@ -97,7 +103,8 @@ void turnLeft()
 }
 
 void resetSteering()
-{  // Center wheels when not turning left or right.
+{
+  // Center wheels when not turning left or right.
   if (analogRead(SteerPot) < MidSteerAngle)
     turnRight();
   else if (analogRead(SteerPot) > MidSteerAngle)
@@ -105,17 +112,12 @@ void resetSteering()
 }
 
 void resetEngine()
-{  // Stop drive motor when not going forwards or backwards.
+{
+  // Stop drive motor when not going forwards or backwards.
   digitalWrite(DriveEn, LOW);
   digitalWrite(DriveDir, LOW);
   analogWrite(DrivePWM, 0);
   DrivePWMValue = 0;
-}
-
-void increment(int valToInc)
-{  // Increment passed value by one if less than 255.
-  if (valToInc < 255)
-    valToInc++;
 }
 
 void handleIncomingByte()
@@ -162,14 +164,16 @@ void handlePinOutputs()
 
 void receiveEvent()
 {
-    incomingByte = Wire.read();  // Set to value of incomingByte.
+  // Set value of incomingByte to the received byte when it is received.
+  incomingByte = Wire.read();
 }
 
 void setup()
 {
-  initOutputs();
-  Wire.begin(ADDR);
-  Wire.onReceive(receiveEvent);  // Function called when byte is received.
+  Serial.begin(9600);
+  initOutputs();                // Initiate output pins.
+  Wire.begin(ADDR);             // Join I2C bus on address ADDR.
+  Wire.onReceive(receiveEvent); // Function called when byte is received.
 }
 
 void loop()
