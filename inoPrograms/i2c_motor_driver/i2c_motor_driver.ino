@@ -17,26 +17,32 @@ const int DriveAcceleration = 10; // Delay for controlling acceleration.
 const int SteerAcceleration = 5;  // Delay for controlling acceleration.
 int DrivePWMValue = 0;            // PWM value for speed control.
 int SteerPWMValue = 0;            // PWM value for speed control.
-int SteerPotValue = 0;            // potentiometer reading from steering column.
-int MinSteerAngle = 514;          // Lower limit for steering pot value.
-int MidSteerAngle = 882;          // Value when wheels are pointed straight.
-int MaxSteerAngle = 1024;         // Upper limit for steering pot value.
+int SteerPotValue;                // potentiometer reading from steering column.
+const int MinSteerAngle = 514;    // Lower limit for steering pot value.
+const int MidSteerAngle = 882;    // Value when wheels are pointed straight.
+const int MaxSteerAngle = 1024;   // Upper limit for steering pot value.
 
-bool forwardsPressed = false;
-bool backwardsPressed = false;
-bool rightPressed = false;
-bool leftPressed = false;
+// bool forwardsPressed = false;
+// bool backwardsPressed = false;
+// bool rightPressed = false;
+// bool leftPressed = false;
 
 // Byte communication code.
 int incomingByte;
-const int FORWARDS_PRESSED = 1;
-const int FORWARDS_RELEASED = 2;
-const int BACKWARDS_PRESSED = 3;
-const int BACKWARDS_RELEASED = 4;
-const int RIGHT_PRESSED = 5;
-const int RIGHT_RELEASED = 6;
-const int LEFT_PRESSED = 7;
-const int LEFT_RELEASED = 8;
+#define FORWARD_FLAG 0
+#define BACKWARD_FLAG 1
+#define STOP_FLAG 2
+#define LEFT_FLAG 3
+#define RIGHT_FLAG 4
+#define CENTER_FLAG 5
+// const int FORWARDS_PRESSED = 1;
+// const int FORWARDS_RELEASED = 2;
+// const int BACKWARDS_PRESSED = 3;
+// const int BACKWARDS_RELEASED = 4;
+// const int RIGHT_PRESSED = 5;
+// const int RIGHT_RELEASED = 6;
+// const int LEFT_PRESSED = 7;
+// const int LEFT_RELEASED = 8;
 
 void initOutputs()
 {
@@ -47,6 +53,8 @@ void initOutputs()
   pinMode(DriveEn, OUTPUT);
   pinMode(DriveDir, OUTPUT);
   pinMode(DrivePWM, OUTPUT);
+  // Analog pin as input. Not necessary, just as reference.
+  pinMode(SteerPot, INPUT);
 }
 
 void increment(int valToIncrement)
@@ -105,9 +113,10 @@ void turnLeft()
 void resetSteering()
 {
   // Center wheels when not turning left or right.
-  if (analogRead(SteerPot) < MidSteerAngle)
+  int SteerPotReading = analogRead(SteerPot);
+  if (SteerPotReading < MidSteerAngle)
     turnRight();
-  else if (analogRead(SteerPot) > MidSteerAngle)
+  else if (SteerPotReading > MidSteerAngle)
     turnLeft();
 }
 
@@ -122,49 +131,67 @@ void resetEngine()
 
 void handleIncomingByte()
 {
-  // Set truth value corresponding to key pressed.
-  if (incomingByte == FORWARDS_PRESSED)
-    forwardsPressed = true;
-  else if (incomingByte == BACKWARDS_PRESSED)
-    backwardsPressed = true;
-
-  if (incomingByte == FORWARDS_RELEASED)
-    forwardsPressed = false;
-  else if (incomingByte == BACKWARDS_RELEASED)
-    backwardsPressed = false;
-
-  if (incomingByte == RIGHT_PRESSED)
-    rightPressed = true;
-  else if (incomingByte == LEFT_PRESSED)
-    leftPressed = true;
-
-  if (incomingByte == RIGHT_RELEASED)
-    rightPressed = false;
-  else if (incomingByte == LEFT_RELEASED)
-    leftPressed = false;
-}
-
-void handlePinOutputs()
-{
   // Use truth values from handleIncomingByte to control motor driver.
-  if (forwardsPressed)
+  if (incomingByte == FORWARD_FLAG)
     moveForwards();
-  else if (backwardsPressed)
+  else if (incomingByte == BACKWARD_FLAG)
     moveBackwards();
-  else
+  else if (incomingByte == STOP_FLAG)
     resetEngine();
 
-  if (rightPressed)
-    turnRight();
-  else if (leftPressed)
+  if (incomingByte == LEFT_FLAG)
     turnLeft();
-  else
+  else if (incomingByte == RIGHT_FLAG)
+    turnRight();
+  else if (incomingByte == CENTER_FLAG)
     resetSteering();
+
+  // Set truth value corresponding to key pressed.
+  // if (incomingByte == FORWARDS_PRESSED)
+  //   forwardsPressed = true;
+  //   backwardsPressed = false;
+  // else if (incomingByte == BACKWARDS_PRESSED)
+  //   backwardsPressed = true;
+  //   forwardsPressed = false;
+
+  // if (incomingByte == FORWARDS_RELEASED)
+  //   forwardsPressed = false;
+  // else if (incomingByte == BACKWARDS_RELEASED)
+  //   backwardsPressed = false;
+
+  // if (incomingByte == RIGHT_PRESSED)
+  //   rightPressed = true;
+  //   leftPressed = false;
+  // else if (incomingByte == LEFT_PRESSED)
+  //   leftPressed = true;
+  //   rightPressed = false;
+
+  // if (incomingByte == RIGHT_RELEASED)
+  //   rightPressed = false;
+  // else if (incomingByte == LEFT_RELEASED)
+  //   leftPressed = false;
 }
+
+// void handlePinOutputs()
+// {
+// if (forwardsPressed)
+//   moveForwards();
+// else if (backwardsPressed)
+//   moveBackwards();
+// else
+//   resetEngine();
+
+// if (rightPressed)
+//   turnRight();
+// else if (leftPressed)
+//   turnLeft();
+// else
+//   resetSteering();
+// }
 
 void receiveEvent()
 {
-  // Set value of incomingByte to the received byte when it is received.
+  // Set value of incomingByte to the received byte.
   incomingByte = Wire.read();
 }
 
@@ -173,11 +200,12 @@ void setup()
   Serial.begin(9600);
   initOutputs();                // Initiate output pins.
   Wire.begin(ADDR);             // Join I2C bus on address ADDR.
-  Wire.onReceive(receiveEvent); // Function called when byte is received.
+  Wire.onReceive(receiveEvent); // Function to call when byte is received.
 }
 
 void loop()
 {
+  Serial.println(incomingByte);
   handleIncomingByte();
-  handlePinOutputs();
+  // handlePinOutputs();
 }
