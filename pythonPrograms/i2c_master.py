@@ -2,7 +2,7 @@ import smbus
 import time
 from modules.process_frame import ProcessFrames
 
-MTR_DRV_ADDR = 1
+MTR_DRV_ADDR = 0x04
 
 proc = ProcessFrames(4)  # 4 = USB Camera on Rock Pi.
 motor_driver = smbus.SMBus(2)  # Start bus on /dev/i2c-2.
@@ -10,6 +10,7 @@ motor_driver = smbus.SMBus(2)  # Start bus on /dev/i2c-2.
 
 def handle_direction(dir_to_go):  # Go forwards.
     """Communicate driving direction to slave device over I2C."""
+    print(dir_to_go)
     if dir_to_go == 'f':
         motor_driver.write_byte(MTR_DRV_ADDR, 4)  # Backwards released.
         motor_driver.write_block(MTR_DRV_ADDR, 1)  # Forwards pressed.
@@ -25,6 +26,7 @@ def handle_direction(dir_to_go):  # Go forwards.
 
 def handle_steering(dir_to_turn):
     """Communicate steering instruction to slave device over I2C."""
+    print(dir_to_turn)
     if dir_to_turn == 'r':  # Turn right.
         motor_driver.write_byte(MTR_DRV_ADDR, 7)  # Left released.
         motor_driver.write_byte(MTR_DRV_ADDR, 5)  # Right pressed.
