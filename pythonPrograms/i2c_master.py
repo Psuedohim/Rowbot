@@ -3,12 +3,12 @@ import time
 from modules.process_frame import ProcessFrames
 
 MTR_DRV_ADDR = 0x04
-FORWARD_FLAG = 0
-BACKWARD_FLAG = 1
-STOP_FLAG = 2
-LEFT_FLAG = 3
-RIGHT_FLAG = 4
-CENTER_FLAG = 5
+FORWARD_FLAG = 1
+BACKWARD_FLAG = 2
+STOP_FLAG = 3
+LEFT_FLAG = 4
+RIGHT_FLAG = 5
+CENTER_FLAG = 6
 
 proc = ProcessFrames(4)  # 4 = USB Camera on Rock Pi.
 motor_driver = smbus.SMBus(2)  # Start bus on /dev/i2c-2.
@@ -31,13 +31,13 @@ def handle_steering(dir_to_turn):
     """Communicate steering instruction to slave device over I2C."""
     print(dir_to_turn)
     if dir_to_turn == 'r':  # Turn right.
-        motor_driver.write_byte(MTR_DRV_ADDR, 5)
+        motor_driver.write_byte(MTR_DRV_ADDR, RIGHT_FLAG)
 
     elif dir_to_turn == 'l':  # Turn left.
-        motor_driver.write_byte(MTR_DRV_ADDR, 7)
+        motor_driver.write_byte(MTR_DRV_ADDR, LEFT_FLAG)
 
     else:  # Continue straight.
-        motor_driver.write_byte(MTR_DRV_ADDR, 7)
+        motor_driver.write_byte(MTR_DRV_ADDR, CENTER_FLAG)
 
 
 boolToKeepRunning = True
@@ -50,5 +50,6 @@ while boolToKeepRunning:
     center_x, center_y = proc.center_coordinates(biggest_contour)
     position = proc.contour_pos(center_x, center_x)
     handle_steering(position)
+    # handle_direction('s')  # Send stop flag, only steer. 
     # crosshair_frame = proc.draw_crosshairs(raw_frame, center_x, center_y)
     # proc.show_frame(crosshair_frame)
