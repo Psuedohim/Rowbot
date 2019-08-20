@@ -4,12 +4,12 @@
 #define ADDR 0x04 // Address for this device over I2C.
 
 // Define pinouts
-#define DriveEn 1
-#define SteerEn 2
-#define DriveDir 3
-#define SteerDir 4
-#define DrivePWM 5
-#define SteerPWM 6
+#define DriveEn 2
+#define SteerEn 3
+#define DriveDir 4
+#define SteerDir 5
+#define DrivePWM 10
+#define SteerPWM 11
 #define SteerPot A0
 
 // Variables for motor control.
@@ -29,12 +29,12 @@ const int MaxSteerAngle = 1024;   // Upper limit for steering pot value.
 
 // Byte communication code.
 int incomingByte;
-#define FORWARD_FLAG 0
-#define BACKWARD_FLAG 1
-#define STOP_FLAG 2
-#define LEFT_FLAG 3
-#define RIGHT_FLAG 4
-#define CENTER_FLAG 5
+#define FORWARD_FLAG 1
+#define BACKWARD_FLAG 2
+#define STOP_FLAG 3
+#define LEFT_FLAG 4
+#define RIGHT_FLAG 5
+#define CENTER_FLAG 6
 // const int FORWARDS_PRESSED = 1;
 // const int FORWARDS_RELEASED = 2;
 // const int BACKWARDS_PRESSED = 3;
@@ -49,19 +49,20 @@ void initOutputs()
   // Set motor driver pinouts as output.
   pinMode(SteerEn, OUTPUT);
   pinMode(SteerDir, OUTPUT);
-  pinMode(SteerPWM, OUTPUT);
+  // pinMode(SteerPWM, OUTPUT);
   pinMode(DriveEn, OUTPUT);
   pinMode(DriveDir, OUTPUT);
-  pinMode(DrivePWM, OUTPUT);
+  // pinMode(DrivePWM, OUTPUT);
   // Analog pin as input. Not necessary, just as reference.
-  pinMode(SteerPot, INPUT);
+  // pinMode(SteerPot, INPUT);
 }
 
-void increment(int valToIncrement)
+int increment(int valToIncrement)
 {
   // Increment parameter value by one.
   if (valToIncrement < 255)
     valToIncrement++;
+  return valToIncrement;
 }
 
 void moveForwards()
@@ -69,7 +70,7 @@ void moveForwards()
   // Forward signal to motor driver.
   digitalWrite(DriveEn, HIGH);
   digitalWrite(DriveDir, HIGH);
-  increment(DrivePWMValue);
+  DrivePWMValue = increment(DrivePWMValue);
   analogWrite(DrivePWM, DrivePWMValue);
   delay(DriveAcceleration);
 }
@@ -79,7 +80,7 @@ void moveBackwards()
   // Backward signal to motor driver.
   digitalWrite(DriveEn, HIGH);
   digitalWrite(DriveDir, LOW);
-  increment(DrivePWMValue);
+  DrivePWMValue = increment(DrivePWMValue);
   analogWrite(DrivePWM, DrivePWMValue);
   delay(DriveAcceleration);
 }
@@ -91,7 +92,7 @@ void turnRight()
   {
     digitalWrite(SteerEn, HIGH);
     digitalWrite(SteerDir, HIGH);
-    increment(SteerPWMValue);
+    SteerPWMValue = increment(SteerPWMValue);
     analogWrite(SteerPWM, SteerPWMValue);
     delay(SteerAcceleration);
   }
@@ -104,7 +105,7 @@ void turnLeft()
   {
     digitalWrite(SteerEn, HIGH);
     digitalWrite(SteerDir, LOW);
-    increment(SteerPWMValue);
+    SteerPWMValue = increment(SteerPWMValue);
     analogWrite(SteerPWM, SteerPWMValue);
     delay(SteerAcceleration);
   }
@@ -113,6 +114,7 @@ void turnLeft()
 void resetSteering()
 {
   // Center wheels when not turning left or right.
+  SteerPWMValue = 0;
   int SteerPotReading = analogRead(SteerPot);
   if (SteerPotReading < MidSteerAngle)
     turnRight();
@@ -136,14 +138,14 @@ void handleIncomingByte()
     moveForwards();
   else if (incomingByte == BACKWARD_FLAG)
     moveBackwards();
-  else if (incomingByte == STOP_FLAG)
+  else //if (incomingByte == STOP_FLAG)
     resetEngine();
 
   if (incomingByte == LEFT_FLAG)
     turnLeft();
   else if (incomingByte == RIGHT_FLAG)
     turnRight();
-  else if (incomingByte == CENTER_FLAG)
+  else //if (incomingByte == CENTER_FLAG)
     resetSteering();
 
   // Set truth value corresponding to key pressed.
@@ -192,7 +194,8 @@ void handleIncomingByte()
 void receiveEvent()
 {
   // Set value of incomingByte to the received byte.
-  incomingByte = Wire.read();
+  if (Wire.available())
+    incomingByte = Wire.read();
 }
 
 void setup()
