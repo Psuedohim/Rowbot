@@ -3,12 +3,12 @@ import time
 from modules.process_frame import ProcessFrames
 
 MTR_DRV_ADDR = 0x04
-FORWARD_FLAG = 1
-BACKWARD_FLAG = 2
-STOP_FLAG = 3
-LEFT_FLAG = 4
-RIGHT_FLAG = 5
-CENTER_FLAG = 6
+FORWARD_FLAG = 2
+BACKWARD_FLAG = 3
+STOP_FLAG = 4
+LEFT_FLAG = 5
+RIGHT_FLAG = 6
+CENTER_FLAG = 7
 
 proc = ProcessFrames(4)  # 4 = USB Camera on Rock Pi.
 motor_driver = smbus.SMBus(2)  # Start bus on /dev/i2c-2.
@@ -50,6 +50,5 @@ while boolToKeepRunning:
     center_x, center_y = proc.center_coordinates(biggest_contour)
     position = proc.contour_pos(center_x, center_x)
     handle_steering(position)
-    # handle_direction('s')  # Send stop flag, only steer. 
     # crosshair_frame = proc.draw_crosshairs(raw_frame, center_x, center_y)
     # proc.show_frame(crosshair_frame)
