@@ -43,12 +43,12 @@ def handle_steering(dir_to_turn):
 boolToKeepRunning = True
 
 while boolToKeepRunning:
-    raw_frame = proc.update_frame()
-    frame = proc.prep_frame(raw_frame)
-    contours = proc.all_contours(frame)
-    biggest_contour = proc.biggest_contour(contours)
-    center_x, center_y = proc.center_coordinates(biggest_contour)
-    position = proc.contour_pos(center_x, center_x)
-    handle_steering(position)
-    # crosshair_frame = proc.draw_crosshairs(raw_frame, center_x, center_y)
-    # proc.show_frame(crosshair_frame)
+    raw_frame = proc.update_frame()  # Capture new frame from camera.
+    frame = proc.prep_frame(raw_frame)  # Prepare frame for contour detection.
+    contours = proc.all_contours(frame)  # Get list of contours from image.
+    biggest_contour = proc.biggest_contour(contours)  # Find largest contour, presumably the hose.
+    center_x, center_y = proc.center_coordinates(biggest_contour)  # Compute center coordinates of contour.
+    position = proc.contour_pos(center_x, center_x)  # Return relative position of contour in frame.
+
+    handle_steering(position)  # Send position as first byte.
+    handle_direction('s')  # Send stop signal on second byte.
