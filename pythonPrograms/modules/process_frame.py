@@ -11,6 +11,7 @@ class ProcessFrames:
         self.height = 0
         self.width = 0
         self.dev = 50  # Deviance allowed for contour to be within center.
+        self.invalid_frame = False  # In case of invalid frame.
 
     def update_frame(self):
         """Returns the most recent frame from the camera."""
@@ -55,17 +56,34 @@ class ProcessFrames:
     def biggest_contour(self, list_of_contours):
         """Return x, y coordinates to center of the largest contour in a list."""
         # Isolate and return largest contour from list.
-        return max(list_of_contours, key=cv2.contourArea)
+        try:
+            return max(list_of_contours, key=cv2.contourArea)
+        except ValueError:
+            print("Value error: Contour considered null.")
+            return -1
 
     def center_coordinates(self, contour):
         """Returns coordinates, x, y, of contour."""
-        mnt = cv2.moments(contour)  # Get data from largest contour.
+        try: 
+            if contour == -1:  # If contour is null,
+                print("Contour is null.")
+                return -1, -1  # Return null coordinates.
+        except ValueError:  # Error from ambiguiously comparing contour obj with
+                            # numerical value.
+            # print("Contour not null.")
+            pass
+
+        # Else, contour is not null. Continue to processing.
         try:  # Try to calculate center of contour.
+            mnt = cv2.moments(contour)  # Get data from largest contour.
             center_x = int(mnt['m10'] / mnt['m00'])
             center_y = int(mnt['m01'] / mnt['m00'])
             return center_x, center_y
-        except ZeroDivisionError:
+        # except ZeroDivisionError:
+        except:
             # If calculating center fails, send null coordinates.
+            # print("Division By Zero Error, Continuing...")
+            print("Some error occurred")
             return -1, -1
 
     def draw_crosshairs(self, frame, x, y):
@@ -86,13 +104,16 @@ class ProcessFrames:
         """Detect position of contour relative to center of frame."""
         vert_mid = self.width / 2  # Middle of frame, vertically.
         # If center of contour is to the left side of the frame.
-        if center_x < 0 and center_y < 0:  # If coordinates were considered null.
-            return 'c'
+        if center_x < 0 and center_y < 0:  # If coordinates were considered null,
+            return 'c'  # Continue straight.
         elif center_x < (vert_mid - self.dev):
             return 'l'
-        # If center of contour is to the right side of frame.
+        # If center of contour is to the right side of frame,
         elif center_x > (vert_mid + self.dev):
-            return 'r'
+            return 'r'  # Go right.
         # If center of contour is within the center of frame.
         else:
             return 'c'
+    
+    def close(self):
+        self.capture.release()
