@@ -9,6 +9,7 @@ STOP_FLAG = 4
 LEFT_FLAG = 5
 RIGHT_FLAG = 6
 CENTER_FLAG = 7
+TERMINATE_FLAG = 254
 LOOP_COUNT = 0
 
 proc = ProcessFrames(0)  # 4 = USB Camera on Rock Pi.
@@ -25,7 +26,8 @@ def handle_comm(steer_instr, drive_instr):
         'c': CENTER_FLAG,
         'f': FORWARD_FLAG,
         'b': BACKWARD_FLAG,
-        's': STOP_FLAG
+        's': STOP_FLAG,
+        'x': TERMINATE_FLAG
     }
     # The data structure to be sent to the arduino. 
     # Holds two values in specific order.
@@ -48,7 +50,7 @@ def main():
     center_x, center_y = proc.center_coordinates(biggest_contour)  # Compute center coordinates of contour.
     position = proc.contour_pos(center_x, center_x)  # Return relative position of contour in frame.
     print("Position of Contour: " + position)
-    handle_comm(position, 's')
+    handle_comm(position, 'f')
 
 def count_loop():
     LOOP_COUNT += 1
@@ -61,5 +63,7 @@ while boolToKeepRunning:
         main()
         # count_loop()
     except KeyboardInterrupt:
+        print("Releasing Camera...")
         proc.close()
-        handle_comm('c', 's')
+        print("Releasing Motors...")
+        handle_comm('x', 'x')

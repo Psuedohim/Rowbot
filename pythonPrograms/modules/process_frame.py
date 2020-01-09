@@ -117,3 +117,4 @@ class ProcessFrames:
     
     def close(self):
         self.capture.release()
+        return
