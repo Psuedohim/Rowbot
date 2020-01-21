@@ -8,8 +8,8 @@ class ProcessFrames:
     def __init__(self, camera):  # Pass address to camera (0 = builtin).
         self.capture = cv2.VideoCapture(camera)
         self.thresh_val = 59  # Threshold value
-        self.height = 0
-        self.width = 0
+        self.height = 640
+        self.width = 480
         self.dev = 50  # Deviance allowed for contour to be within center.
         self.invalid_frame = False  # In case of invalid frame.
 
@@ -18,7 +18,8 @@ class ProcessFrames:
         if self.capture.isOpened():
             _, frame = self.capture.read()  # Get most recent frame.
             # For use in other functions.
-            self.height, self.width, _ = frame.shape
+            # self.height, self.width, _ = frame.shape
+            print("Height: " + str(self.height) + "\nWidth: " + str(self.width))
             return frame
 
         else:

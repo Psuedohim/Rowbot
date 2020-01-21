@@ -1,6 +1,8 @@
-from smbus2 import SMBus
 import time
+from smbus2 import SMBus
 from modules.process_frame import ProcessFrames
+from picamera.array import PiRGBArray
+from picamera import PiCamera
 
 MTR_DRV_ADDR = 0x04
 FORWARD_FLAG = 2
@@ -42,28 +44,35 @@ def handle_comm(steer_instr, drive_instr):
         pass
 
 
-def main():
-    raw_frame = proc.update_frame()  # Capture new frame from camera.
+def main(raw_frame):
+    # raw_frame = proc.update_frame()  # Capture new frame from camera.
     frame = proc.prep_frame(raw_frame)  # Prepare frame for contour detection.
     contours = proc.all_contours(frame)  # Get list of contours from image.
     biggest_contour = proc.biggest_contour(contours)  # Find largest contour, presumably the hose.
     center_x, center_y = proc.center_coordinates(biggest_contour)  # Compute center coordinates of contour.
     position = proc.contour_pos(center_x, center_x)  # Return relative position of contour in frame.
     print("Position of Contour: " + position)
-    handle_comm(position, 'f')
+    handle_comm('c', 'f')
+    # handle_comm(position, 'f')
 
 def count_loop():
     LOOP_COUNT += 1
     print("Loop Count: " + str(LOOP_COUNT))
 
-boolToKeepRunning = True
 
-while boolToKeepRunning:
-    try:
-        main()
+camera = PiCamera()
+camera.resolution = (proc.width, proc.height)
+# camera.framerate = 32
+rawCapture = PiRGBArray(camera, size=(proc.width, proc.height))
+
+try:
+    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+        raw_image = frame.array
+        main(raw_image)
         # count_loop()
-    except KeyboardInterrupt:
-        print("Releasing Camera...")
-        proc.close()
-        print("Releasing Motors...")
-        handle_comm('x', 'x')
+        rawCapture.truncate(0)
+except:
+    print("Releasing Camera...")
+    proc.close()
+    print("Releasing Motors...")
+    handle_comm('x', 'x')
