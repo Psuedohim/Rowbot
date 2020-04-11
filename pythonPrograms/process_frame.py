@@ -8,10 +8,10 @@ class ProcessFrames:
     def __init__(self, camera):  # Pass address to camera (0 = builtin).
         self.capture = cv2.VideoCapture(camera)
         self.thresh_val = 59  # Threshold value
-        self.height = 640
-        self.width = 480
+        self.height = 320
+        self.width = 1080
         self.dev = 50  # Deviance allowed for contour to be within center.
-        self.invalid_frame = False  # In case of invalid frame.
+        # self.invalid_frame = False  # In case of invalid frame.
 
     def update_frame(self):
         """Returns the most recent frame from the camera."""
@@ -19,9 +19,8 @@ class ProcessFrames:
             _, frame = self.capture.read()  # Get most recent frame.
             # For use in other functions.
             # self.height, self.width, _ = frame.shape
-            print("Height: " + str(self.height) + "\nWidth: " + str(self.width))
+            print(F"Frame size: {frame.shape}")
             return frame
-
         else:
             print("Camera not available.\nExiting Program.")
             exit()
@@ -32,40 +31,40 @@ class ProcessFrames:
         blur_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
         # Adaptive threshold is used to balance shadows and
         # inconsistencies in the frame
-        frame = cv2.adaptiveThreshold(blur_frame,
-                                      self.thresh_val,
-                                      cv2.ADAPTIVE_THRESH_MEAN_C,
-                                      cv2.THRESH_BINARY_INV,
-                                      11,
-                                      2)
+        thresh_frame = cv2.adaptiveThreshold(blur_frame,
+                                             self.thresh_val,
+                                             cv2.ADAPTIVE_THRESH_MEAN_C,
+                                             cv2.THRESH_BINARY_INV,
+                                             11,
+                                             2)
+        prepped_frame = thresh_frame
+        return prepped_frame
 
-        return frame
-
-    def all_contours(self, frame_to_search):
+    def largest_contour(self, frame_to_search):
         """Find all contours in a frame. Return sorted list."""
-        contours, _ = cv2.findContours(frame_to_search,
-                                       cv2.RETR_TREE,
-                                       cv2.CHAIN_APPROX_NONE)
-
+        _, contours, _ = cv2.findContours(frame_to_search,
+                                          # Return outermost contours.
+                                          cv2.RETR_EXTERNAL,
+                                          cv2.CHAIN_APPROX_SIMPLE)  # Compress straight segments into points.
         # Return sorted list, biggest -> smallest, if list not empty.
         if contours:
-            return sorted(contours, key=cv2.contourArea, reverse=True)
+            return sorted(contours, key=cv2.contourArea, reverse=True)[0]
         else:
             # Return empty list.
             return []
 
-    def biggest_contour(self, list_of_contours):
-        """Return x, y coordinates to center of the largest contour in a list."""
-        # Isolate and return largest contour from list.
-        try:
-            return max(list_of_contours, key=cv2.contourArea)
-        except ValueError:
-            print("Value error: Contour considered null.")
-            return -1
+    # def biggest_contour(self, list_of_contours):
+    #     """Return x, y coordinates to center of the largest contour in a list."""
+    #     # Isolate and return largest contour from list.
+    #     try:
+    #         return max(list_of_contours, key=cv2.contourArea)
+    #     except ValueError:
+    #         print("Value error: Contour considered null.")
+    #         return -1
 
     def center_coordinates(self, contour):
-        """Returns coordinates, x, y, of contour."""
-        try: 
+        """Returns x-y coordinates of a single contour."""
+        try:
             if contour == -1:  # If contour is null,
                 print("Contour is null.")
                 return -1, -1  # Return null coordinates.
@@ -73,7 +72,6 @@ class ProcessFrames:
                             # numerical value.
             # print("Contour not null.")
             pass
-
         # Else, contour is not null. Continue to processing.
         try:  # Try to calculate center of contour.
             mnt = cv2.moments(contour)  # Get data from largest contour.
@@ -99,7 +97,7 @@ class ProcessFrames:
 
     def show_frame(self, frame_to_show):
         cv2.imshow("Current Frame", frame_to_show)
-        # cv2.waitKey(0)  # Wait for key press to continue.
+        cv2.waitKey(0)  # Wait for key press to continue.
 
     def contour_pos(self, center_x, center_y):
         """Detect position of contour relative to center of frame."""
@@ -115,7 +113,7 @@ class ProcessFrames:
         # If center of contour is within the center of frame.
         else:
             return 'c'
-    
+
     def close(self):
         self.capture.release()
         return
