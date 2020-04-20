@@ -2,19 +2,12 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <iostream>
-// #include <unistd.h>				//Needed for I2C port
-// #include <fcntl.h>				//Needed for I2C port
-// #include <sys/ioctl.h>			//Needed for I2C port
-// #include <linux/i2c-dev.h>		//Needed for I2C port
 #include "i2c_comm.h"
-
-
 #include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
-// #include "i2c_comm.h"
 
 using namespace rp::standalone::rplidar;
 
-RPlidarDriver * driver;
+RPlidarDriver * driver;  // Initialize pointer for LiDAR driver.
 u_result     op_result;
 
 #ifndef _countof
@@ -23,50 +16,31 @@ u_result     op_result;
 
 bool ctrl_c_pressed;
 
-int file_i2c;
-int length = 3;  //<<< Number of bytes to write
-int addr = 0x04;  //<<<<<The I2C address of the slave.
-unsigned char * buffer[3] = {0};
-char *filename = (char*)"/dev/i2c-7";
-
-// void write_to_i2c()
-// {
-// 	printf("Got to method!\n");
-
-// 	// buffer[1] = 0x03;
-// 	// buffer[2] = 0x07;
-// 	if ((file_i2c = open(filename, O_RDWR)) < 0)
-// 	{
-// 		printf("Error No. %d", file_i2c);
-// 		//ERROR HANDLING: you can check errno to see what went wrong.
-// 		printf("Failed to open the i2c bus");
-// 		// return false;
-// 	}
-	
-// 	if (ioctl(file_i2c, I2C_SLAVE, addr) < 0)
-// 	{
-// 		printf("Failed to acquire bus access and/or talk to slave.\n");
-// 		// return false;
-// 	}
-// 	//write() returns the number of bytes actually written, if it doesn't match then an error occurred (e.g. no response from the device)
-// 	if (write(file_i2c, buffer, length) != length)  
-// 	{
-// 		/* ERROR HANDLING: i2c transaction failed */
-// 		printf("Failed to write to the i2c bus.\n");
-// 		// return false;
-// 	}
-
-// 	// return true;
-// }
+int file_i2c;  
+int length = 3;  // Number of bytes to write to MCU.
+int addr = 0x04;  // The I2C address of MCU.
+unsigned char * buffer[3] = {0};  // Initialize 
+char *filename = (char*)"/dev/i2c-7";  // MCU connected to I2C bus number 7.
 
 
 void ctrlc(int)
 {
+	/* This method is called when the user exits the program via `ctrl-c`.
+	 * This will set a global variable, ctrl-c-pressed, to true, causing a 
+	 * break in the control loop. 
+	 */
 	ctrl_c_pressed = true;
 }
 
+
 bool checkRPLIDARHealth(RPlidarDriver* driver)
 {
+	/* This method collects the current health information from the RPLiDAR 
+	 * device. 
+	 * Returns:
+	 * 		true - Device is okay, ready to go.
+	 * 		false - Device could not be connected to / Device not in good health.
+	 */
 	u_result op_result;
 	rplidar_response_device_health_t healthinfo;
 
@@ -92,14 +66,20 @@ bool checkRPLIDARHealth(RPlidarDriver* driver)
 	}
 }
 
+
 void setup_lidar()
 {
+	/* Runs setup routine for RPLiDAR.
+	 * Assigns global pointer, `driver`, to an instance of RPLiDAR driver on
+	 * the specified port with baudrate 115200; the baudrate for RPLiDAR A2.
+	 */
 	const char* opt_com_path = NULL;
 	opt_com_path = "/dev/ttyUSB0";
 
-	// create the driver instance
+	// Create the driver instance.
 	driver = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
-	if (!driver) {
+	if (!driver)  // If driver creation was not successful,
+	{ 
 		fprintf(stderr, "insufficent memory, exit\n");
 		exit(-2);
 	}
@@ -158,26 +138,11 @@ void setup_lidar()
 }
 
 
-// tuple<double, double> get_measurement()
-// {
-
-// }
-
 int main(int argc, const char* argv[]) 
 {
-
-	printf("Got here");
-	// while (true)
-	// {
-	// 	// write_to_i2c();
-	// 	printf("Sending Data\n");
-	// 	write_buffer(0, 1);
-	// }
-
 	setup_lidar();
 	signal(SIGINT, ctrlc);
 
-	printf("Got Here");
 	driver->startMotor();
 	// Start scan.
 	RplidarScanMode scanMode;
@@ -214,17 +179,15 @@ int main(int argc, const char* argv[])
 
 		}
 
-		// printf("Sending Data\n");
-		// write_buffer(0, 1);
 
 		if (ctrl_c_pressed) {
 			break;
 		}
 	}
 
-	write_buffer(0, 0);
-	driver->stop();
-	driver->stopMotor();
+	write_buffer(0, 0);  // Send stop signal to MCU.
+	driver->stop();  // Stop scanning.
+	driver->stopMotor();  // Stop spinning RPLiDAR motor.
 
 
 }
