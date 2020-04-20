@@ -16,12 +16,6 @@ u_result     op_result;
 
 bool ctrl_c_pressed;
 
-int file_i2c;  
-int length = 3;  // Number of bytes to write to MCU.
-int addr = 0x04;  // The I2C address of MCU.
-unsigned char * buffer[3] = {0};  // Initialize 
-char *filename = (char*)"/dev/i2c-7";  // MCU connected to I2C bus number 7.
-
 
 void ctrlc(int)
 {
@@ -127,14 +121,9 @@ void setup_lidar()
 
 	// check health...
 	if (!checkRPLIDARHealth(driver)) {
-		// goto on_finished;
 	 	RPlidarDriver::DisposeDriver(driver);
 	 	driver = NULL;
 	}
-
-	// on_finished:
-	// 	RPlidarDriver::DisposeDriver(driver);
-	// 	driver = NULL;
 }
 
 
@@ -147,7 +136,6 @@ int main(int argc, const char* argv[])
 	// Start scan.
 	RplidarScanMode scanMode;
 	driver -> startScan(false, true, 0, &scanMode);
-	//driver->startScan(0, 1);
 
 	// fetch result and print it out...
 	while (true) {
@@ -159,7 +147,6 @@ int main(int argc, const char* argv[])
 
 		for (int pos = 0; pos < (int)count; ++pos) 
 		{
-			
 			float angle = nodes[pos].angle_z_q14 * 90.f / (1 << 14);
 			float distance = nodes[pos].dist_mm_q2 / (1 << 2);
 
@@ -174,9 +161,7 @@ int main(int argc, const char* argv[])
 				{
 					write_buffer(0, 0);
 				}
-
 			}
-
 		}
 
 

@@ -3,16 +3,14 @@
 
 bool write_buffer(int8_t theta, int8_t drive)
 {
-	// printf("Got to method!");
+	char *filename = (char*)"/dev/i2c-7";  // MCU connected to I2C bus number 7.
 	int file_i2c;
-	int length = 3;  //<<< Number of bytes to write
-	int addr = 0x04;  //<<<<<The I2C address of the slave.
-	int8_t buffer[3];
+	int length = 3;  // Number of bytes to write to MCU.
+	int addr = 0x04;  // The I2C address of the MCU.
+	int8_t buffer[3];  // Initialize buffer to write to MCU over I2C.
 	buffer[0] = 0;  // Starting Bit.
 	buffer[1] = theta;  // Theta instruction.
 	buffer[2] = drive;  // Drive instruction.
-
-	char *filename = (char*)"/dev/i2c-7";
 
 	if ((file_i2c = open(filename, O_RDWR)) < 0)
 	{
