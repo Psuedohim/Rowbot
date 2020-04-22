@@ -134,26 +134,32 @@ int main(int argc, const char* argv[])
 
 	driver->startMotor();
 	// Start scan.
-	RplidarScanMode scanMode;
-	driver -> startScan(false, true, 0, &scanMode);
+	// RplidarScanMode scanMode;
+	std::vector<RplidarScanMode> scanModes;
+	driver->getAllSupportedScanModes(scanModes);
+	// driver -> startScan(false, true, 0, &scanMode);
+	driver->startScanExpress(false, scanModes[1].id);
 
 	// fetch result and print it out...
 	while (true) {
 		rplidar_response_measurement_node_hq_t nodes[8192];  // Supposed to be better.
+		// rplidar_response_measurement_node_hq_t nodes[1024];  // Supposed to be better.
 		size_t   count = _countof(nodes);
 
 		op_result = driver->grabScanDataHq(nodes, count);  // Hq method coincides with rplidar_..._node_hq_t.
-		
 
-		for (int pos = 0; pos < (int)count; ++pos) 
+		if (IS_FAIL(op_result))
+			printf("Failed to get scan data.");
+
+		for (int pos = 0; pos < (int)count; ++pos)
 		{
 			float angle = nodes[pos].angle_z_q14 * 90.f / (1 << 14);
 			float distance = nodes[pos].dist_mm_q2 / (1 << 2);
 
-			if ((int)angle > 345 || (int)angle < 15)
+			if ((int)angle > 355 || (int)angle < 5)
 			{
 				printf("theta: %03.2f Dist: %08.2f\n", angle, distance);
-				if (distance > 300)
+				if (distance > 800)
 				{
 					write_buffer(0, 1);
 				}
