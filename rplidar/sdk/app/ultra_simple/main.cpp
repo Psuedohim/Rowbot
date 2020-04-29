@@ -143,8 +143,7 @@ int main(int argc, const char* argv[])
 	// fetch result and print it out...
 	while (true) {
 		rplidar_response_measurement_node_hq_t nodes[8192];  // Supposed to be better.
-		// rplidar_response_measurement_node_hq_t nodes[1024];  // Supposed to be better.
-		size_t   count = _countof(nodes);
+		size_t count = _countof(nodes);
 
 		op_result = driver->grabScanDataHq(nodes, count);  // Hq method coincides with rplidar_..._node_hq_t.
 
