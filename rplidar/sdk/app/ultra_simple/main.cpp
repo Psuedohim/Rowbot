@@ -15,6 +15,7 @@ u_result     op_result;
 #endif
 
 bool ctrl_c_pressed;
+bool AUTO_FLAG = false;
 
 
 void ctrlc(int)
@@ -133,11 +134,9 @@ int main(int argc, const char* argv[])
 	signal(SIGINT, ctrlc);
 
 	driver->startMotor();
-	// Start scan.
-	// RplidarScanMode scanMode;
+	// Start scan process.
 	std::vector<RplidarScanMode> scanModes;
 	driver->getAllSupportedScanModes(scanModes);
-	// driver -> startScan(false, true, 0, &scanMode);
 	driver->startScanExpress(false, scanModes[1].id);
 
 	// fetch result and print it out...
@@ -157,7 +156,7 @@ int main(int argc, const char* argv[])
 
 			if ((int)angle > 355 || (int)angle < 5)
 			{
-				printf("theta: %03.2f Dist: %08.2f\n", angle, distance);
+				// printf("theta: %03.2f Dist: %08.2f\n", angle, distance);
 				if (distance > 800)
 				{
 					write_buffer(0, 1);

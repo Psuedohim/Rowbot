@@ -1,8 +1,5 @@
-#include <algorithm>
-#include <cmath>
-#include <iostream>
-#include <queue>
-
+#include <valarray> // Lib for element-wise operations.
+#include "geometry.h"
 #include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
 
 const int body_unit = 305;          // Farthest part of rover from scanner.
@@ -13,24 +10,19 @@ std::vector<Point> Objects;
 std::vector<Layer> Layers;
 std::vector<Point> Steps;
 
-struct Layer
+struct activate_layers
 {
-  int r;
-  bool occupied;
-};
-
-struct Circle
-{
-  int x = base_point; // Default starting point of circle.
-  int y = base_point; // Default starting point of circle.
-  int r = 180;        // Default radius of circle ~ half width of rover.
-};
-
-struct Point
-{
-  int x;
-  int y;
-  int r;
+  void operator()(Point &object)
+  {
+    for (int i = 0; i < Layers.size(); i++)
+    {
+      if (std::isgreaterequal(object.r, Layers[i].r)) // If object is in layer.
+      {
+        Layers[i].occupied = true; // Activate layer.
+        break;                     // Stop searching through layers.
+      }
+    }
+  }
 };
 
 void init_layers()
@@ -57,8 +49,8 @@ Point vectorize_point(float theta, float distance)
 {
   Point temp_point;
   temp_point.r = scale_raw_distance(distance);
-  temp_point.x = temp_point.r * cos(theta);
-  temp_point.y = temp_point.r * sin(theta);
+  temp_point.x = temp_point.r * std::cos(theta);
+  temp_point.y = temp_point.r * std::sin(theta);
   return temp_point;
 }
 
@@ -68,61 +60,80 @@ void vectorize_scan(rplidar_response_measurement_node_hq_t nodes[8192], size_t c
   {
     float angle = nodes[pos].angle_z_q14 * 90.f / (1 << 14); // Angle in degrees.
     float theta = (angle * 2 * 3.1416) / 360;                // Conversion to radians.
-    float distance = nodes[pos].dist_mm_q2 / (1 << 2);
-    Objects.push_back(vectorize_point(theta, distance));
+    float distance = nodes[pos].dist_mm_q2 / (1 << 2);       // Distance in mm.
+    Objects.push_back(vectorize_point(theta, distance));     // Push to Object vector.
   }
 }
-
-// void activate_layers(Point object)
-// {
-//   for (int i = 0; i < Layers.size(); i++)
-//   {
-//     if (std::isgreaterequal(object.r, Layers[i].r)) // If object is in layer.
-//     {
-//       Layers[i].occupied = true; // Activate layer.
-//       return;                    // Stop searching through layers.
-//     }
-//   }
-// };
-
-struct activate_layers
-{
-  void operator()(Point &object)
-  {
-    for (int i = 0; i < Layers.size(); i++)
-    {
-      if (std::isgreaterequal(object.r, Layers[i].r)) // If object is in layer.
-      {
-        Layers[i].occupied = true; // Activate layer.
-        return;                    // Stop searching through layers.
-      }
-    }
-  }
-};
 
 int8_t calculate_speed()
 {
   std::for_each(Objects.begin(), Objects.end(), activate_layers());
-  for (int i = 0; i < Layers.size(); i++)
+  const int n_layers = Layers.size();
+  for (int i = 0; i < n_layers; i++)
   {
-    if (Layers[i].occupied) 
+    if (Layers[i].occupied)
+      return (int8_t)((255 / n_layers) * i);
   }
 }
 
-bool inside_circle(Circle circle, Point point)
+Circle buffer_forward(Circle buffer_circle, std::vector<Point> objects)
 {
-  int dx = circle.x - point.x;
-  int dy = circle.y - point.y;
-  if ((std::pow(dx, 2) + std::pow(dy, 2)) <= std::pow(circle.r, 2))
-    return true;
-  else
-    return false;
+  while (!inside_circle(buffer_circle, objects))
+  {
+    buffer_circle.y += body_unit;
+  }
+  buffer_circle.y -= body_unit;
+  return buffer_circle;
 }
 
-void navigator()
+bool try_buffer_up(Circle buffer_circle)
+{
+  // Check if buffer circle can be moved up without conflict.
+}
+
+Circle advance_buffer(Circle buffer_circle, std::vector<Point> objects, Point goal)
+{
+  int dx = goal.x - buffer_circle.x;
+  int dy = goal.y - buffer_circle.y;
+  if (dx > body_unit && dy < -body_unit)
+  {
+    if (try_buffer_up(buffer_circle))
+    {
+      // Do something if buffer can be moved up.
+    }
+    else
+    {
+      // Move right since dx > 0.
+    }
+    
+  }
+}
+
+std::queue<Point> navigator(Point goal, std::vector<Point> objects)
 {
   // Return set of steps to assigned goal point.
-  std::queue<int[2]> steps;
+  std::queue<Point> steps;      // Initialize queue.
+  Circle buffer_circle;         // Initialize searcher-circle.
+  buffer_circle.r = body_unit;  // Set buffer_circle radius.
+  buffer_circle.x = base_point; // Set x-y position to rover position.
+  buffer_circle.y = base_point;
+  bool circle_clear = true;
+  char last_flag = 'f';
+
+  while (circle_clear)
+  {
+    circle_clear = !inside_circle(buffer_circle, objects);
+    Point temp_point;
+    temp_point.x = buffer_circle.x;
+    temp_point.y = buffer_circle.y;
+    steps.push(temp_point);
+    // buffer_circle.y += body_unit;  // Increment buffer circle forwards.
+  }
+}
+
+void navHelper()
+{
+  char last_flag = 'f';
 }
 
 int main()
