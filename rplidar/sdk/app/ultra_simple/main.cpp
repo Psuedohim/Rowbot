@@ -4,6 +4,7 @@
 #include <iostream>
 #include "i2c_comm.h"
 #include "rplidar.h" //RPLIDAR standard sdk, all-in-one header
+// #include "radio_control.h"
 
 using namespace rp::standalone::rplidar;
 
@@ -178,5 +179,5 @@ int main(int argc, const char* argv[])
 	driver->stop();  // Stop scanning.
 	driver->stopMotor();  // Stop spinning RPLiDAR motor.
 
-
+	// read_radio();
 }
