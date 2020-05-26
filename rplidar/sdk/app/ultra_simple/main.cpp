@@ -206,7 +206,6 @@ int main(int argc, const char *argv[])
 		PREV_AUTO_STATE = false;
 		shutdown_lidar();
 	}
-}
 
 	if (MCU_PACKAGE.SaveScanData)
 	{
@@ -233,10 +232,4 @@ int main(int argc, const char *argv[])
 		CSV_FILE.close();
 		shutdown_lidar();
 	}
-}
-else if (PREV_SAVE_STATE)
-{
-	CSV_FILE.close();
-	shutdown_lidar();
-}
 }
