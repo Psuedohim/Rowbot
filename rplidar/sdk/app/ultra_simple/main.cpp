@@ -208,24 +208,30 @@ int main(int argc, const char *argv[])
 	}
 }
 
-if (MCU_PACKAGE.SaveScanData)
-{
-	if (!PREV_SAVE_STATE) // Setup for saving lidar data.
+	if (MCU_PACKAGE.SaveScanData)
 	{
-		int scan_counter = 0;
-		PREV_SAVE_STATE = true;
-		setup_lidar();
-		CSV_FILE.open("SaveScanTest.csv");
+		if (!PREV_SAVE_STATE) // Setup for saving lidar data.
+		{
+			int scan_counter = 0;
+			PREV_SAVE_STATE = true;
+			setup_lidar();
+			CSV_FILE.open("SaveScanTest.csv");
+		}
+		DataToSave scan = get_lidar_data();
+		CSV_FILE << "Scan No. " << scan_counter << "\n";
+		CSV_FILE << "Theta, Distance, Joystick X, Joystick Y\n";
+		for (int i = 0; i < lidar_scan.theta_deg.size(); i++)
+		{
+			CSV_FILE << scan.theta_deg[i] << ", ";
+			CSV_FILE << scan.distance_mm[i] << ", ";
+			CSV_FILE << MCU_PACKAGE.joystick_x << ", ";
+			CSV_FILE << MCU_PACKAGE.joystick_y << "\n";
+		}
 	}
-	DataToSave scan = get_lidar_data();
-	CSV_FILE << "Scan No. " << scan_counter << "\n";
-	CSV_FILE << "Theta, Distance, Joystick X, Joystick Y\n";
-	for (int i = 0; i < lidar_scan.theta_deg.size(); i++)
+	else if (PREV_SAVE_STATE)
 	{
-		CSV_FILE << scan.theta_deg[i] << ", ";
-		CSV_FILE << scan.distance_mm[i] << ", ";
-		CSV_FILE << MCU_PACKAGE.joystick_x << ", ";
-		CSV_FILE << MCU_PACKAGE.joystick_y << "\n";
+		CSV_FILE.close();
+		shutdown_lidar();
 	}
 }
 else if (PREV_SAVE_STATE)
