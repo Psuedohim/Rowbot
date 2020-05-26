@@ -28,6 +28,8 @@ CXXSRC += i2c_comm.cpp
 # CXXSRC += radio_control.cpp
 C_INCLUDES += -I$(CURDIR)/../../sdk/include -I$(CURDIR)/../../sdk/src
 
+CFLAGS= -O  // I2C lib uses inline functions, suggested to add this option.
+
 EXTRA_OBJ := 
 LD_LIBS += -lstdc++ -lpthread
 
