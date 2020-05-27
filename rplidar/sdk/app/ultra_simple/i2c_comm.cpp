@@ -16,8 +16,8 @@ struct I2C_IN_PACK
 
 struct I2C_OUT_PACK
 {
-	virt_joystick_x = 0;
-	virt_joystick_y = 0;
+	int8_t virt_joystick_x = 0;
+	int8_t virt_joystick_y = 0;
 }
 
 bool
