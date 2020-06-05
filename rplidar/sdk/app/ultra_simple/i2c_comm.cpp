@@ -5,7 +5,7 @@ int addr = 0x04;											 // The I2C address of the MCU.
 int file_i2c;
 
 
-bool connect_i2c(int addr=addr)
+bool connect_i2c()
 {
 	/*
 	Connect to I2C bus and establish connection to slave device on `addr`.
