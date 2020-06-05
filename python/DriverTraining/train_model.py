@@ -52,7 +52,8 @@ if __name__ == "__main__":
     path_to_data = "python/DriverTraining/ScanData/BetterData.csv"
 
     x_data, y_data = process_data(path_to_data)
-    x_test, x_train, y_test, y_train = test_train_split(x_data, y_data)
+    x_test, x_train, y_test, y_train = test_train_split(
+        x_data, y_data, test_size=1000)
 
     model = get_compiled_model()
     model.summary()
@@ -62,7 +63,7 @@ if __name__ == "__main__":
         x_train,
         y_train,
         batch_size=128,
-        epochs=500,
+        epochs=100,
         verbose=0,
     )
 
@@ -70,6 +71,7 @@ if __name__ == "__main__":
     # Evaluate the model on the test data using `evaluate`
     print("Evaluate on test data")
     results = model.evaluate(x_test, y_test, batch_size=100)
+    print(F"Results: {results}\n")
 
     model.save("python/DriverTraining/trained_model.h5")
     print("Saved Model!")
