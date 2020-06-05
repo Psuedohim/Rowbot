@@ -27,11 +27,17 @@ CXXSRC += main.cpp
 CXXSRC += i2c_comm.cpp
 # CXXSRC += radio_control.cpp
 C_INCLUDES += -I$(CURDIR)/../../sdk/include -I$(CURDIR)/../../sdk/src
+C_INCLUDES += `pkg-config --cflags opencv4`
 
-CFLAGS= -O  // I2C lib uses inline functions, suggested to add this option.
+CFLAGS = -O  // I2C lib uses inline functions, suggested to add -O option.
+# CFLAGS += `pkg-config --cflags opencv4`
+
+# Include OpenCV compiled library.
+LD_LIBS += `pkg-config --libs opencv4`
+
 
 EXTRA_OBJ := 
-LD_LIBS += -lstdc++ -lpthread
+LD_LIBS += -lstdc++ -lpthread -lm
 
 all: build_app
 

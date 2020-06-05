@@ -19,7 +19,7 @@
 #
 HOME_TREE := ../
 
-MAKE_TARGETS := ultra_simple mapper
+MAKE_TARGETS := ultra_simple
 
 include $(HOME_TREE)/mak_def.inc
 
