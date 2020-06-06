@@ -66,7 +66,7 @@ if __name__ == "__main__":
         x_train,
         y_train,
         batch_size=64,
-        epochs=10,
+        epochs=100,
         verbose=1,
     )
 
