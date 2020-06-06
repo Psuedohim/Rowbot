@@ -65,7 +65,7 @@ if __name__ == "__main__":
     history = model.fit(
         x_train,
         y_train,
-        batch_size=256,
+        batch_size=64,
         epochs=10,
         verbose=1,
     )
