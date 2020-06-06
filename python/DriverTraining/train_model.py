@@ -7,8 +7,8 @@ import time
 from data_manager import process_data, test_train_split
 
 
-def get_uncompiled_model():
-    inputs = keras.Input(shape=(32, 32, 1), name="scan")
+def get_uncompiled_model(input_size):
+    inputs = keras.Input(shape=input_size, name="scan")
     x = layers.Conv2D(64, (7, 7), padding="same", activation="relu")(inputs)
     x = layers.MaxPooling2D(pool_size=(2, 2))(x)
     # x = layers.Conv2D(64, (5, 5), padding="same", activation="relu")(x)
@@ -30,8 +30,8 @@ def get_uncompiled_model():
     return model
 
 
-def get_compiled_model():
-    model = get_uncompiled_model()
+def get_compiled_model(input_size=(32, 32, 1)):
+    model = get_uncompiled_model(input_size)
     model.compile(
         # optimizer=keras.optimizers.Adadelta(),  # Optimizer
         optimizer=keras.optimizers.Adam(),  # Optimizer
@@ -53,18 +53,21 @@ if __name__ == "__main__":
 
     x_data, y_data = process_data(path_to_data)
     x_test, x_train, y_test, y_train = test_train_split(
-        x_data, y_data, test_size=1000)
+        x_data, y_data, test_size=3000)
 
-    model = get_compiled_model()
+    image_shape = x_test.shape[1:]
+    print(image_shape)
+
+    model = get_compiled_model(input_size=image_shape)
     model.summary()
 
     print("Fit model on training data")
     history = model.fit(
         x_train,
         y_train,
-        batch_size=128,
-        epochs=100,
-        verbose=0,
+        batch_size=256,
+        epochs=10,
+        verbose=1,
     )
 
     history.history
