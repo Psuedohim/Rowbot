@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 
-path_to_data = "python/DriverTraining/ScanData/OrigHouseScan1.csv"
+# path_to_data = "python/DriverTraining/ScanData/OrigHouseScan1.csv"
+path_to_data = "python/DriverTraining/ScanData/HouseScan1.csv"
 
 temp_doc = {
     "Scan": 0,
@@ -90,8 +91,8 @@ def process_data(path):
     """
     read_into_documents(path)
     num_docs = len(documents)
-    img_size_x = 32
-    img_size_y = 32
+    img_size_x = 128
+    img_size_y = 128
     # num_meas = 250  # Number of measurements to keep for training.
     center_x = int(img_size_x / 2)
     center_y = int(img_size_y / 2)
@@ -115,15 +116,15 @@ def process_data(path):
         y_coords = dists * np.cos(np.radians(thetas))
         # Scale x-y-coords to fit into x_data.
         x_coords = minmax_scale(
-            x_coords, feature_range=(-center_x, (center_x - 1)))
+            x_coords, feature_range=(0, (img_size_x - 1)))
         y_coords = minmax_scale(
-            y_coords, feature_range=(-center_y, (center_y - 1)))
+            y_coords, feature_range=(0, (img_size_y - 1)))
         # Convert coordinates to integer for indexing.
         x_coords = x_coords.astype(int)
         y_coords = y_coords.astype(int)
         # Account for origin of scan at center of image, not TL corner.
-        x_coords += int(center_x / 2)
-        y_coords += int(center_y / 2)
+        # x_coords += int(center_x / 2)
+        # y_coords += int(center_y / 2)
         # Insert scan data to output array.
         x_data[i, x_coords, y_coords] = 1
 
@@ -163,7 +164,7 @@ if __name__ == "__main__":
 
     x_data, y_data = process_data(path_to_data)
 
-    img = x_data[0, :, :]
+    img = x_data[-1, :, :]
     print(F"Shape of img: {img.shape}\n")
     plt.imshow(img, cmap=cm.gray)
     plt.show()
