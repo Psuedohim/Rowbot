@@ -7,9 +7,6 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 
-# path_to_data = "python/DriverTraining/ScanData/OrigHouseScan1.csv"
-path_to_data = "python/DriverTraining/ScanData/HouseScan1.csv"
-
 temp_doc = {
     "Scan": 0,
     "Joystick X": 0,
@@ -84,6 +81,19 @@ def read_into_documents(path):
     # return documents
 
 
+def log_scale_list(array_to_scale, max_val):
+    """
+        Perform min/max scaling on entire vector.
+        Parameters:
+                array_to_scale - Numpy array containing unscaled float values.
+                max_val - Maximum value for scale.
+    """
+    array_to_scale = np.divide(
+        np.log1p(array_to_scale), np.log(17000))
+    scaled_array = np.multiply(array_to_scale, max_val)
+    return scaled_array
+
+
 def process_data(path):
     """
     Load data from file.
@@ -91,51 +101,40 @@ def process_data(path):
     """
     read_into_documents(path)
     num_docs = len(documents)
-    img_size_x = 128
-    img_size_y = 128
+    img_size = 32
     # num_meas = 250  # Number of measurements to keep for training.
-    center_x = int(img_size_x / 2)
-    center_y = int(img_size_y / 2)
+    img_center = int(img_size / 2)
     # Initialize output array.
-    x_data = np.zeros((num_docs, img_size_y, img_size_x))
-    # y_data = np.zeros((num_docs, 1))
-    joystick_x = []
-    joystick_y = []
+    x_data = np.zeros((num_docs, img_size, img_size))
+    y_data = np.zeros((num_docs, 2))
 
     for i in range(0, num_docs):
         doc = documents[i]
-        # Append joystick positions to list.
-        joystick_x.append(doc["Joystick X"])
-        joystick_y.append(doc["Joystick Y"])
+        # Insert joystick positions to y_data.
+        y_data[i, 0] = doc["Joystick X"]
+        y_data[i, 1] = doc["Joystick Y"]
+
         # Generate numpy arrays from scan data.
         thetas = np.array(doc["Theta"])
         dists = np.array(doc["Distance"])
+        dists = log_scale_list(dists, img_center - 1)
         # thetas, dists = trim_array(thetas, dists, trim_to_size=250)  # Trim size of scan.
         # Calculate "true" x-y-coordinates for plotting scan.
         x_coords = dists * np.sin(np.radians(thetas))
         y_coords = dists * np.cos(np.radians(thetas))
-        # Scale x-y-coords to fit into x_data.
-        x_coords = minmax_scale(
-            x_coords, feature_range=(0, (img_size_x - 1)))
-        y_coords = minmax_scale(
-            y_coords, feature_range=(0, (img_size_y - 1)))
         # Convert coordinates to integer for indexing.
         x_coords = x_coords.astype(int)
         y_coords = y_coords.astype(int)
         # Account for origin of scan at center of image, not TL corner.
-        # x_coords += int(center_x / 2)
-        # y_coords += int(center_y / 2)
+        x_coords += img_center
+        y_coords = -y_coords + img_center
         # Insert scan data to output array.
-        x_data[i, x_coords, y_coords] = 1
+        x_data[i, y_coords, x_coords] = 1
 
-    joy_x = np.array(joystick_x)
-    joy_y = np.array(joystick_y)
-    # Calculate and angle in degrees.
-    steer_arr = np.degrees(np.arctan(joy_x / joy_y))
-    # Normalize steer data to range [-1, 1].
-    steer_arr /= 90
+    # Normalize joystick positions to range [-1, 1].
+    y_data[:, :] /= 127
 
-    return x_data, steer_arr
+    return x_data, y_data
 
 
 def test_train_split(x_data, y_data, test_size=1500):
@@ -146,11 +145,8 @@ def test_train_split(x_data, y_data, test_size=1500):
 
     x_train = x_data[:-test_size, :, :]
     x_test = x_data[-test_size:, :, :]
-
-    # y_train = y_data[:-test_size, :]
-    # y_test = y_data[-test_size:, :]
-    y_train = y_data[:-test_size]
-    y_test = y_data[-test_size:]
+    y_train = y_data[:-test_size, :]
+    y_test = y_data[-test_size:, :]
 
     y_train = y_train.astype("float32")
     y_test = y_test.astype("float32")
@@ -159,9 +155,12 @@ def test_train_split(x_data, y_data, test_size=1500):
 
 
 if __name__ == "__main__":
+    # path_to_data = "python/DriverTraining/ScanData/BetterData.csv"
+    path_to_data = "python/DriverTraining/ScanData/HouseScan1.csv"
     start_time = time.time()
     print("Test for `data_manager.py`\n")
 
+    """Begin testing for Data Manager."""
     x_data, y_data = process_data(path_to_data)
 
     img = x_data[-1, :, :]
@@ -173,6 +172,15 @@ if __name__ == "__main__":
     print(F"Shape of returned y_data: {y_data.shape}\n")
     # print(F"First of x_data: {x_data[0, :]}\n")
     print(F"First 10 of y_data: {y_data[0:10]}\n")
+    """End testing for Data Manager."""
+
+    max_dists = []
+    read_into_documents(path_to_data)
+
+    for doc in documents:
+        max_dists.append(max(doc["Distance"]))
+
+    print(F"Max Distance from all scans: {max(max_dists)}\n")
 
     end_time = time.time()
     print(F"Time to complete: {end_time - start_time}\n")
