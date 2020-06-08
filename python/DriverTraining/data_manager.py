@@ -89,19 +89,22 @@ def log_scale_list(array_to_scale, max_val):
                 max_val - Maximum value for scale.
     """
     array_to_scale = np.divide(
-        np.log1p(array_to_scale), np.log(17000))
+        # np.log1p(np.log1p(array_to_scale)), np.log(np.log(17000))
+        # np.log1p(array_to_scale), np.log(17000)
+        np.sqrt(np.sqrt(array_to_scale)), np.sqrt(np.sqrt(17000))
+    )
     scaled_array = np.multiply(array_to_scale, max_val)
     return scaled_array
 
 
-def process_data(path):
+def process_data(path, img_size=32):
     """
     Load data from file.
     Return numpy array of processed data in form [[(theta, distance), steer_angle], ...]
     """
     read_into_documents(path)
     num_docs = len(documents)
-    img_size = 32
+    # img_size = 32
     # num_meas = 250  # Number of measurements to keep for training.
     img_center = int(img_size / 2)
     # Initialize output array.
