@@ -10,7 +10,7 @@ from data_manager import process_data, test_train_split
 
 def get_uncompiled_model(input_size):
     inputs = keras.Input(shape=input_size, name="scan")
-    x = layers.Conv2D(32, (7, 7), padding="same", activation="elu")(inputs)
+    x = layers.Conv2D(32, (3, 3), padding="same", activation="relu")(inputs)
     x = layers.MaxPooling2D(pool_size=(2, 2))(x)
     # x = layers.Conv2D(64, (5, 5), padding="same", activation="relu")(x)
     # x = layers.MaxPooling2D(pool_size=(2, 2))(x)
@@ -23,8 +23,8 @@ def get_uncompiled_model(input_size):
     # x = layers.Dense(1024, activation="relu", name="dense_2")(x)
     # x = layers.Dense(256, activation="relu", name="dense_3")(x)
     # x = layers.Dense(128, activation="relu", name="dense_4")(x)
-    x = layers.Dense(64, activation="sigmoid", name="dense_5")(x)
-    x = layers.Dense(32, activation="sigmoid", name="dense_6")(x)
+    # x = layers.Dense(64, activation="sigmoid", name="dense_5")(x)
+    x = layers.Dense(32, activation="relu", name="dense_6")(x)
     # output_x = layers.Dense(1, activation="linear", name="predictions_x")(x)
     output_x = layers.Dense(2, activation="tanh", name="predictions_x")(x)
     model = keras.Model(inputs=inputs, outputs=output_x)
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     # path_to_data = "python/DriverTraining/ScanData/OrigHouseScan1.csv"
     path_to_data = "python/DriverTraining/ScanData/BetterData.csv"
 
-    x_data, y_data = process_data(path_to_data)
+    x_data, y_data = process_data(path_to_data, img_size=64)
     x_test, x_train, y_test, y_train = test_train_split(
         x_data, y_data, test_size=1500)
 
