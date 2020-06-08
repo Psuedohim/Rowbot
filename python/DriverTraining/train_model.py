@@ -10,9 +10,9 @@ from data_manager import process_data, test_train_split
 
 def get_uncompiled_model(input_size):
     inputs = keras.Input(shape=input_size, name="scan")
-    x = layers.Conv2D(32, (3, 3), padding="same", activation="relu")(inputs)
+    x = layers.Conv2D(32, (7, 7), padding="same", activation="elu")(inputs)
     x = layers.MaxPooling2D(pool_size=(2, 2))(x)
-    # x = layers.Conv2D(32, (5, 5), padding="same", activation="relu")(x)
+    # x = layers.Conv2D(64, (5, 5), padding="same", activation="relu")(x)
     # x = layers.MaxPooling2D(pool_size=(2, 2))(x)
     # x = layers.Conv2D(128, (5, 5), padding="same", activation="relu")(x)
     # x = layers.MaxPooling2D(pool_size=(2, 2))(x)
@@ -23,8 +23,8 @@ def get_uncompiled_model(input_size):
     # x = layers.Dense(1024, activation="relu", name="dense_2")(x)
     # x = layers.Dense(256, activation="relu", name="dense_3")(x)
     # x = layers.Dense(128, activation="relu", name="dense_4")(x)
-    # x = layers.Dense(64, activation="relu", name="dense_5")(x)
-    x = layers.Dense(32, activation="relu", name="dense_6")(x)
+    x = layers.Dense(64, activation="sigmoid", name="dense_5")(x)
+    x = layers.Dense(32, activation="sigmoid", name="dense_6")(x)
     # output_x = layers.Dense(1, activation="linear", name="predictions_x")(x)
     output_x = layers.Dense(2, activation="tanh", name="predictions_x")(x)
     model = keras.Model(inputs=inputs, outputs=output_x)
@@ -36,9 +36,10 @@ def get_compiled_model(input_size=(32, 32, 1)):
     model.compile(
         # optimizer=keras.optimizers.Adadelta(),  # Optimizer
         optimizer=keras.optimizers.Adam(),  # Optimizer
+        # optimizer=tf.keras.optimizers.SGD(),
         # Loss function to minimize
-        # loss="cosine_similarity",
-        loss="mse",
+        loss="mae",
+        # loss=tf.keras.losses.MeanAbsolutePercentageError(),
         # loss=tf.keras.losses.MeanSquaredError(),
         # List of metrics to monitor
         # metrics=[tf.keras.metrics.MeanAbsoluteError()],
