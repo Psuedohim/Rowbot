@@ -18,6 +18,5 @@ results = model.evaluate(x_test, y_test, batch_size=100)
 print(F"Results: {results}\n")
 
 
-# predictions = model.predict(x_test)
-# print(predictions)
-# print(predictions * 90)
+predictions = model.predict(x_test[:10, :, :])
+print(predictions * 127)
