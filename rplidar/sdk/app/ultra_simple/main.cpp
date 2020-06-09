@@ -10,6 +10,7 @@
 #include <rplidar.h> //RPLIDAR standard sdk, all-in-one header
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 
 using namespace rp::standalone::rplidar;
@@ -194,22 +195,21 @@ DataToSave get_lidar_data()
 	}
 }
 
-std::vector<int> scale_vector(std::vector<float> v, int min_val, int max_val)
+std::vector<float> scale_vector(std::vector<float> v, int max_val)
 {
 	/*
 	Perform min/max scaling on entire vector.
 	Parameters:
 	 	v - Vector containing unscaled float values.
-	 	min_val - Minimum value for scale.
 		max_val - Maximum value for scale.
 	*/
-	std::vector<int> return_vector;
-	float min = *std::min_element(v.begin(), v.end());  // Get smallest element.
-	float max = *std::max_element(v.begin(), v.end());  // Get largest element.
-	for (uint i = 0; i < v.size(); i++)  // Loop over vector.
+	std::vector<float> return_vector;
+	for (uint i = 0; i < v.size(); i++)
 	{
-		// Append scaled value to `return_vector`.
-		return_vector.push_back(int(((v[i] - min)/(max - min)) * (max_val - min_val)) + min_val);
+		float val = v[i];
+		val = std::log(val + 1) / std::log(17000);
+		val = val * max_val;
+		return_vector.push_back(val);
 	}
 
 	return return_vector;
@@ -229,7 +229,7 @@ float deg_to_rad(float deg)
 }
 
 
-cv::Mat get_model_input()
+cv::Mat get_model_input(const int img_size=32)
 {
 	/*
 	Retrieves scan from LiDAR.
@@ -237,42 +237,49 @@ cv::Mat get_model_input()
 	Returns:
 		cv::Mat, an image of size (32, 32, 1) containing scan points.
 	*/
+	int img_center = img_size / 2;
 	cv::Mat image;  // Initialize image container.
-	image = cv::Mat::zeros(32, 32, CV_8U);  // Resize container to 32x32x8, fill with 0s.
+	image = cv::Mat::zeros(img_size, img_size, CV_8U);  // Resize container to 32x32x1, fill with 0s.
 	DataToSave scan = get_lidar_data();  // Get latest scan from LiDAR.
 	// Initialize two vectors, one for Xs, another for Ys.
-	std::vector<float> x_points;
-	std::vector<float> y_points;
+	std::vector<float> scaled_dists = scale_vector(scan.distance_mm, img_center - 1);
+	std::vector<int> x_points;
+	std::vector<int> y_points;
 	for (uint i = 0; i < scan.theta_deg.size(); i++)  // Loop over scan.
 	{
 		// Fill x-y-vectors with points calculated from scan.
 		float theta_rad = deg_to_rad(scan.theta_deg[i]);
-		x_points.push_back(std::round(scan.distance_mm[i] * std::sin(theta_rad)));
-		y_points.push_back(std::round(scan.distance_mm[i] * std::cos(theta_rad)));
+		x_points.push_back(std::round(scaled_dists[i] * std::sin(theta_rad)));
+		y_points.push_back(std::round(scaled_dists[i] * std::cos(theta_rad)));
 	}
 	// Scale x-y-vectors as to fit in image container.
-	std::vector<int> scaled_x_pts = scale_vector(x_points, 0, 31);
-	std::vector<int> scaled_y_pts = scale_vector(y_points, 0, 31);
+	// std::vector<int> scaled_x_pts = scale_vector(x_points, img_center - 1);
+	// std::vector<int> scaled_y_pts = scale_vector(y_points, img_center - 1);
 
-	for (uint i = 0; i < scaled_x_pts.size(); i++)  // Loop over scaled x-y-vectors.
+	for (uint i = 0; i < x_points.size(); i++)  // Loop over scaled x-y-vectors.
 	{
-		// Fill in image with points. 
-		image.at<uchar>(scaled_x_pts[i], scaled_y_pts[i]) = 255;
+		// Fill in image with points, accounting for origin at center.
+		int x_index = x_points[i] + img_center;
+		int y_index = img_center - y_points[i];
+		image.at<uchar>(y_index, x_index) = 255;
 	}
+	// cv::imwrite("ScanImg.jpeg", image);
 
 	return image;
 } 
 
 
-void assign_virtual_joystick(float steer_angle_deg)
+void assign_virtual_joystick(float x, float y)
 {
 	/*
 	Assigns global virtual joystick values calculated from steering angle.
 	Parameters:
 		steer_angle_deg - A float type containing angle in range [-90, 90].
 	*/
-	DRIVE_INSTR.virt_joystick_x = 127 * std::sin(deg_to_rad(steer_angle_deg));
-	DRIVE_INSTR.virt_joystick_y = 127 * std::cos(deg_to_rad(steer_angle_deg));
+	DRIVE_INSTR.virt_joystick_x = x * 127;
+	DRIVE_INSTR.virt_joystick_y = y * 127;
+	// DRIVE_INSTR.virt_joystick_x = 127 * std::sin(deg_to_rad(steer_angle_deg));
+	// DRIVE_INSTR.virt_joystick_y = 127 * std::cos(deg_to_rad(steer_angle_deg));
 	// Debugging drive instructions.
 	// std::cout << "VJYX: " << int(DRIVE_INSTR.virt_joystick_x);
 	// std::cout << "\tVJYY: " << int(DRIVE_INSTR.virt_joystick_y) << "\n";
@@ -287,6 +294,7 @@ int main(int argc, const char *argv[])
 	printf("opencv version: %d.%d.%d\n",CV_VERSION_MAJOR,CV_VERSION_MINOR,CV_VERSION_REVISION);
 	// Load keras model using frugally-deep.
 	const auto model = fdeep::load_model("/home/linaro/Documents/Rowbot/rplidar/sdk/app/ultra_simple/export_model.json");
+	int counter = 0;
 
 	while (true)
 	{
@@ -307,25 +315,37 @@ int main(int argc, const char *argv[])
 		{
 			if (!PREV_AUTO_STATE) // Need to setup for auto driving.
 			{
+				counter = 0;
 				PREV_AUTO_STATE = true;
 				setup_lidar();
 				printf("\nAutonomous Driving Initiated.\n");
 			}
+			counter += 1;
 			// Get scan as 2D image, run image through prediction model.
 			cv::Mat image = get_model_input();
+			if (counter == 45)
+				cv::imwrite("/home/linaro/Documents/Rowbot/rplidar/sdk/output/Linux/Release/ScanImg.png", image);
+
 			const auto input = fdeep::tensor_from_bytes(image.ptr(),
 	        	static_cast<std::size_t>(image.rows),
 	        	static_cast<std::size_t>(image.cols),
 	        	static_cast<std::size_t>(image.channels()),
 	        	0.0f, 1.0f);
 
-	    	const auto result = model.predict_single_output({input});
-			float steering_angle = result * 90;
-			assign_virtual_joystick(steering_angle);
+	    	const auto result = model.predict({input});
+			// float steering_angle = result * 127;
+			// std::cout << fdeep::show_tensors(result) << std::endl;
+			// // std::vector<float> vect = *result.front().as_vector();
+			const auto x_y_joystick = *result[0].as_vector();
+			// std::cout << vec[0] << "\t" << vec[1];
+			// Send drive instructions based on steering prediction.
+			assign_virtual_joystick(x_y_joystick[0], x_y_joystick[1]);
 		}
 		else if (PREV_AUTO_STATE) // Switched autonomous driving off.
 		{
 			printf("Turning Off Autonomous Driving.\n");
+			DRIVE_INSTR.virt_joystick_x = 0;
+			DRIVE_INSTR.virt_joystick_y = 0;
 			shutdown_lidar();
 			PREV_AUTO_STATE = false;
 		}
@@ -339,7 +359,7 @@ int main(int argc, const char *argv[])
 				scan_counter = 0;
 				PREV_SAVE_STATE = true;
 				setup_lidar();
-				CSV_FILE.open("SaveScanTest.csv");
+				CSV_FILE.open("/home/linaro/Documents/Rowbot/rplidar/sdk/output/Linux/Release/SaveScanTest.csv", std::ios::app);
 			}
 			DataToSave scan = get_lidar_data();
 
