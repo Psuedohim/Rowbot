@@ -173,7 +173,7 @@ DataToSave get_lidar_data()
 	*/
 	DataToSave tempData; // Temporary data point from scan.
 	// std::vector<DataToSave> tempVector;  // Temporary vector to store all data from scan.
-	rplidar_response_measurement_node_hq_t nodes[256]; // Create response node of size 256.
+	rplidar_response_measurement_node_hq_t nodes[512]; // Create response node of size 512.
 	size_t count = _countof(nodes);
 
 	op_result = driver->grabScanDataHq(nodes, count); // Hq method coincides with rplidar_..._node_hq_t.
@@ -207,7 +207,7 @@ std::vector<float> scale_vector(std::vector<float> v, int max_val)
 	for (uint i = 0; i < v.size(); i++)
 	{
 		float val = v[i];
-		val = std::log(val + 1) / std::log(17000);
+		val = std::sqrt(std::sqrt(val)) / std::sqrt(std::sqrt(17000));
 		val = val * max_val;
 		return_vector.push_back(val);
 	}
@@ -278,11 +278,18 @@ void assign_virtual_joystick(float x, float y)
 	*/
 	DRIVE_INSTR.virt_joystick_x = x * 127;
 	DRIVE_INSTR.virt_joystick_y = y * 127;
-	// DRIVE_INSTR.virt_joystick_x = 127 * std::sin(deg_to_rad(steer_angle_deg));
-	// DRIVE_INSTR.virt_joystick_y = 127 * std::cos(deg_to_rad(steer_angle_deg));
-	// Debugging drive instructions.
-	// std::cout << "VJYX: " << int(DRIVE_INSTR.virt_joystick_x);
-	// std::cout << "\tVJYY: " << int(DRIVE_INSTR.virt_joystick_y) << "\n";
+}
+
+// void assign_virtual_joystick(int8_t x, int8_t y)
+// {
+// 	DRIVE_INSTR.virt_joystick_x = x;
+// 	DRIVE_INSTR.virt_joystick_y = y;
+// 	// std::cout << "X: " << int(x) << "\tY: " << int(y) << "\n";
+// }
+
+int8_t from_categorical(int idx, int num_classes)
+{
+	return ((((idx * 2) / (num_classes - 1)) - 1) * 127);
 }
 
 
@@ -322,7 +329,7 @@ int main(int argc, const char *argv[])
 			}
 			counter += 1;
 			// Get scan as 2D image, run image through prediction model.
-			cv::Mat image = get_model_input();
+			cv::Mat image = get_model_input(64);
 			if (counter == 45)
 				cv::imwrite("/home/linaro/Documents/Rowbot/rplidar/sdk/output/Linux/Release/ScanImg.png", image);
 
@@ -333,13 +340,30 @@ int main(int argc, const char *argv[])
 	        	0.0f, 1.0f);
 
 	    	const auto result = model.predict({input});
-			// float steering_angle = result * 127;
-			// std::cout << fdeep::show_tensors(result) << std::endl;
-			// // std::vector<float> vect = *result.front().as_vector();
+			std::cout << fdeep::show_tensors(result) << std::endl;
 			const auto x_y_joystick = *result[0].as_vector();
-			// std::cout << vec[0] << "\t" << vec[1];
 			// Send drive instructions based on steering prediction.
 			assign_virtual_joystick(x_y_joystick[0], x_y_joystick[1]);
+
+			/* Below was used for a categorical prediction model. */
+			// const auto x_vector = *result[0].as_vector();
+			// const auto y_vector = *result[1].as_vector();
+
+			// const int max_x_idx = std::distance(x_vector.begin(),std::max_element(x_vector.begin(), x_vector.end()));
+			// const int max_y_idx = std::distance(y_vector.begin(),std::max_element(y_vector.begin(), y_vector.end()));
+			
+			// // std::cout << "Size of vector: " << x_vector.size() << "\n";
+
+			// assign_virtual_joystick(
+			// 	from_categorical(max_x_idx, x_vector.size()),
+			// 	from_categorical(max_y_idx, y_vector.size())
+			// 	);
+
+			// Printing index of max values.
+			// std::cout << "Max X: ";
+			// std::cout << std::distance(x_vector.begin(),std::max_element(x_vector.begin(), x_vector.end())) << "\n";
+			// std::cout << "Max Y: ";
+			// std::cout << std::distance(x_vector.begin(),std::max_element(x_vector.begin(), x_vector.end())) << "\n";
 		}
 		else if (PREV_AUTO_STATE) // Switched autonomous driving off.
 		{
