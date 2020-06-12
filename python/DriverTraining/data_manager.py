@@ -5,6 +5,7 @@ import time
 from sklearn.preprocessing import minmax_scale
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from tensorflow.keras.utils import to_categorical
 
 
 temp_doc = {
@@ -46,7 +47,7 @@ def read_into_documents(path):
     Load data from file.
     Return numpy array.
     """
-
+    documents.clear()
     # data = np.genfromtxt(path, delimiter=',')
     # data = pd.read_csv(path, sep=',')
     with open(path, mode='r') as csvfile:
@@ -102,6 +103,7 @@ def process_data(path, img_size=32):
     Load data from file.
     Return numpy array of processed data in form [[(theta, distance), steer_angle], ...]
     """
+    # documents = []
     read_into_documents(path)
     num_docs = len(documents)
     # img_size = 32
@@ -136,16 +138,38 @@ def process_data(path, img_size=32):
 
     # Normalize joystick positions to range [-1, 1].
     y_data[:, :] /= 127
+    x_data = np.expand_dims(x_data, axis=3)
 
     return x_data, y_data
 
 
-def test_train_split(x_data, y_data, test_size=1500):
-    print(F"Shape of data: {x_data.shape}\n")
-    x_data = np.expand_dims(x_data, axis=3)
-    print(F"Shape of data (expanded): {x_data.shape}\n")
-    # print(F"Data Example: {y_data[0,:,:]}\n")
+def gen_lstm_inputs(x_data, y_data, t_steps, skip_steps):
+    print(F"Init X_Data: {x_data.shape}")
+    while x_data.shape[0] % t_steps > 0:
+        x_data = np.delete(x_data, -1, axis=0)
 
+    print(F"trim X_Data: {x_data.shape}")
+    n_batches = int(x_data.shape[0] / t_steps)
+    lstm_inputs = np.zeros(
+        (n_batches, t_steps, x_data.shape[1], x_data.shape[2], x_data.shape[3]))
+
+    lstm_outputs = np.zeros((n_batches, 2))
+
+    for i in range(0, n_batches - skip_steps, skip_steps):
+        for j in range(0, t_steps):
+            lstm_inputs[i, j, :, :, :] = x_data[i + j, :, :, :]
+            lstm_outputs[i, :] = y_data[i + j, :]
+
+    return lstm_inputs, lstm_outputs
+
+
+def gen_categorical(y_data, num_classes):
+    y_data += 1  # Normalize values to [0, 2] for categorizing.
+    y_data *= (num_classes/2)
+    return to_categorical(y_data, num_classes=num_classes + 1)
+
+
+def test_train_split(x_data, y_data, test_size=1500):
     x_train = x_data[:-test_size, :, :]
     x_test = x_data[-test_size:, :, :]
     y_train = y_data[:-test_size, :]
