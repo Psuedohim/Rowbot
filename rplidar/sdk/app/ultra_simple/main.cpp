@@ -6,12 +6,13 @@
 #include <fstream>
 #include <cmath>
 #include <i2c_comm.h>
-#include <fdeep/fdeep.hpp>
 #include <rplidar.h> //RPLIDAR standard sdk, all-in-one header
-#include <opencv2/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/videoio.hpp>
+#include <opencv2/opencv.hpp>
+#include <fdeep/fdeep.hpp>
+// #include <opencv2/core.hpp>
+// #include <opencv2/highgui/highgui.hpp>
+// #include <opencv2/imgproc/imgproc.hpp>
+// #include <opencv2/videoio.hpp>
 
 
 using namespace rp::standalone::rplidar;
@@ -31,7 +32,7 @@ I2C_IN_PACK MCU_PACKAGE;
 I2C_OUT_PACK DRIVE_INSTR;
 
 std::ofstream CSV_FILE; // For saving scan data.
-cv::VideoCapture cap("/dev/video0");  // Initialize RPi Camera reader.
+// cv::VideoCapture cap("nvarguscamerasrc sensor-id=0 ! video/x-raw(memory:NVMM), width=(int)1280, height=(int)720, framerate=30/1, format=(string)NV12 ! nvvidconv flip-method=2 ! video/x-raw ! appsink ");
 
 struct DataToSave
 {
@@ -270,32 +271,32 @@ cv::Mat get_model_input(const int img_size=32)
 	return image;
 } 
 
-void setup_camera(const int h = 64, const int w = 64)
-{
-	// cap.open("/dev/video0");  // Open camera for reading.
-	cap.set(cv::CAP_PROP_FRAME_HEIGHT, h);
-	cap.set(cv::CAP_PROP_FRAME_WIDTH, w);
-}
+// void setup_camera(const int h = 64, const int w = 64)
+// {
+// 	// cap.open("/dev/video0");  // Open camera for reading.
+// 	cap.set(cv::CAP_PROP_FRAME_HEIGHT, h);
+// 	cap.set(cv::CAP_PROP_FRAME_WIDTH, w);
+// }
 
-cv::Mat get_current_frame()
-{
-	cv::Mat frame;
-	cv::Mat gray;
+// cv::Mat get_current_frame()
+// {
+// 	cv::Mat frame;
+// 	cv::Mat gray;
 
-	if (!cap.isOpened())
-		std::cout << "\nCould not open camera.\n";
+// 	if (!cap.isOpened())
+// 		std::cout << "\nCould not open camera.\n";
 
-	cap.read(frame);
-	// cap >> frame;
+// 	cap.read(frame);
+// 	// cap >> frame;
 
-	if (frame.empty())
-	{
-		std::cout << "Empty frame in get_current_frame!";
-	}
-	cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY); 
+// 	if (frame.empty())
+// 	{
+// 		std::cout << "Empty frame in get_current_frame!";
+// 	}
+// 	cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY); 
 
-	return gray;
-}
+// 	return gray;
+// }
 
 
 void assign_virtual_joystick(float x, float y)
@@ -328,8 +329,9 @@ int main(int argc, const char *argv[])
 	signal(SIGINT, ctrlc);
 	// Debugging OpenCV linking issues. Should be version 4.3.0.
 	printf("opencv version: %d.%d.%d\n",CV_VERSION_MAJOR,CV_VERSION_MINOR,CV_VERSION_REVISION);
+	cv::VideoCapture cap("nvarguscamerasrc sensor-id=0 ! video/x-raw(memory:NVMM), width=(int)128, height=(int)128, framerate=30/1, format=(string)NV12 ! nvvidconv flip-method=2 ! video/x-raw ! appsink ");
 	// Load keras model using frugally-deep.
-	const auto model = fdeep::load_model("/home/linaro/Documents/Rowbot/rplidar/sdk/app/ultra_simple/export_model.json");
+	// const auto model = fdeep::load_model("/home/linaro/Documents/Rowbot/rplidar/sdk/app/ultra_simple/export_model.json");
 	int counter = 0;
 
 	while (true)
@@ -354,22 +356,31 @@ int main(int argc, const char *argv[])
 				counter = 0;
 				PREV_AUTO_STATE = true;
 				setup_lidar();
-				setup_camera(64, 64);  // Setup camera with parameters `height, width`.
+				// setup_camera(64, 64);  // Setup camera with parameters `height, width`.
 				printf("\nAutonomous Driving Initiated.\n");
 			}
 			counter += 1;
+			cv::Mat cam_image;
+			cap.read(cam_image);
+
 			// Get scan as 2D image, run image through prediction model.
 			cv::Mat scan_image = get_model_input(64);
 			if (counter == 45)
-				cv::imwrite("/home/linaro/Documents/Rowbot/rplidar/sdk/output/Linux/Release/ScanImg.png", scan_image);
+				cv::imwrite("/home/rowbot/Documents/Rowbot/rplidar/sdk/output/ScanImg.jpeg", scan_image);
 
-			const auto input = fdeep::tensor_from_bytes(scan_image.ptr(),
+			const auto cam_input = fdeep::tensor_from_bytes(cam_image.ptr(),
+	        	static_cast<std::size_t>(cam_image.rows),
+	        	static_cast<std::size_t>(cam_image.cols),
+	        	static_cast<std::size_t>(cam_image.channels()),
+	        	0.0f, 1.0f);
+
+			const auto scan_input = fdeep::tensor_from_bytes(scan_image.ptr(),
 	        	static_cast<std::size_t>(scan_image.rows),
 	        	static_cast<std::size_t>(scan_image.cols),
 	        	static_cast<std::size_t>(scan_image.channels()),
 	        	0.0f, 1.0f);
 
-	    	const auto result = model.predict({input});
+	    	const auto result = model.predict({scan_input, cam_input});
 			// std::cout << fdeep::show_tensors(result) << std::endl;
 			const auto x_y_joystick = *result[0].as_vector();
 			// Send drive instructions based on steering prediction.
@@ -413,11 +424,13 @@ int main(int argc, const char *argv[])
 				// scan_counter = 0;
 				PREV_SAVE_STATE = true;
 				setup_lidar();
-				setup_camera(64, 64);  // Setup camera with parameters `height, width`.
-				CSV_FILE.open("/home/linaro/Documents/Rowbot/rplidar/sdk/output/Linux/Release/SaveScanTest.csv", std::ios::app);
+				// setup_camera(64, 64);  // Setup camera with parameters `height, width`.
+				CSV_FILE.open("/home/rowbot/Documents/Rowbot/rplidar/sdk/output/ScanImgSave.csv", std::ios::app);
 			}
 			DataToSave scan = get_lidar_data();
-			cv::Mat img = get_current_frame();
+			cv::Mat img;
+			cap.read(img);
+			// cv::Mat img = get_current_frame();
 
 			if (img.empty())
 			{
