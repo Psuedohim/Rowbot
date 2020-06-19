@@ -1,6 +1,6 @@
 #include "i2c_comm.h"
 
-char *filename = (char *)"/dev/i2c-7"; // MCU connected to I2C bus number 7.
+char *filename = (char *)"/dev/i2c-1"; // MCU connected to I2C bus number 1.
 int addr = 0x04;											 // The I2C address of the MCU.
 int file_i2c;
 
