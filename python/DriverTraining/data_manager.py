@@ -13,9 +13,10 @@ temp_doc = {
     "Scan": 0,
     "Joystick X": 0,
     "Joystick Y": 0,
-    "Theta": [],
-    "Distance": [],
-    "Image": np.zeros((128, 128), np.uint8),
+    # "Joysticks": np.zeros((1, 2)),
+    "Theta": np.zeros((1, 1)),
+    "Distance": np.zeros((1, 1)),
+    "Image": np.zeros((80, 128), np.uint8),
 }
 
 documents = []
@@ -45,14 +46,13 @@ def trim_array(thetas, dists, trim_to_size):
     return thetas, dists
 
 
-def read_into_documents(path):
+def read_into_documents(path, no_img):
     """
     Load data from file.
     Return numpy array.
     """
+    start_time = time.time()
     documents.clear()
-    # data = np.genfromtxt(path, delimiter=',')
-    # data = pd.read_csv(path, sep=',')
     with open(path, mode='r') as csvfile:
         reader = csv.reader(csvfile, delimiter=",", skipinitialspace=True)
         for row in reader:
@@ -68,28 +68,40 @@ def read_into_documents(path):
             elif label == "Joystick Y":
                 temp_doc[label] = int(row[1])
             elif label == "Theta":
-                temp_doc[label] = []
-                for value in row[1:]:
-                    temp_doc[label].append(float(value))
+                temp_doc[label] = np.array(row[1:], dtype=np.float)
             elif label == "Distance":
-                temp_doc[label] = []
-                for value in row[1:]:
-                    temp_doc[label].append(int(value))
+                temp_doc[label] = np.array(row[1:], dtype=np.int)
+
+                if no_img:
+                    img = np.empty((80, 128))
+                    temp_doc["Image"] = cv2.randn(img, (0), (255))
+                    documents.append({
+                        "Scan": temp_doc["Scan"],
+                        "Joystick X": temp_doc["Joystick X"],
+                        "Joystick Y": temp_doc["Joystick Y"],
+                        "Theta": temp_doc["Theta"],
+                        "Distance": temp_doc["Distance"],
+                        "Image": temp_doc["Image"],
+                    })
             elif label == "Image":
                 # print("Label is image")
                 i = 0
                 # Overwrite old image.
-                temp_doc[label] = np.zeros((128, 128))
-                temp_doc["Image"][i, :] = np.array(row[1:])
+                temp_doc[label] = np.zeros((80, 128))
+                try:
+                    temp_doc["Image"][i, :] = np.array(row[1:])
+                except ValueError:
+                    print(F"Value error at line no.: {reader.line_num}\n")
                 row = next(reader, None)
                 i += 1
                 while row:
                     if len(row) != 128 and not row[0].isdigit():
                         print(F"Fault in CSV, line no: {reader.line_num}\n")
                         break
-                    # print(
-                    #     F"Current index (i): {i}\tFirst value in row: {row[0]}\n")
-                    temp_doc["Image"][i, :] = np.array(row)
+                    try:
+                        temp_doc["Image"][i, :] = np.array(row)
+                    except ValueError:
+                        print(F"Value error at line no.: {reader.line_num}\n")
                     try:
                         row = next(reader, None)
                     except:
@@ -106,7 +118,8 @@ def read_into_documents(path):
                     "Distance": temp_doc["Distance"],
                     "Image": temp_doc["Image"],
                 })
-    print(F"Filled {len(documents)} documents.\n")
+    print(
+        F"Filled {len(documents)} documents in {time.time() - start_time} seconds.\n")
 
     # return documents
 
@@ -119,25 +132,23 @@ def log_scale_list(array_to_scale, max_val):
                 max_val - Maximum value for scale.
     """
     array_to_scale = np.divide(
-        # np.log1p(np.log1p(array_to_scale)), np.log(np.log(17000))
-        # np.log1p(array_to_scale), np.log(17000)
         np.sqrt(np.sqrt(array_to_scale)), np.sqrt(np.sqrt(17000))
     )
     scaled_array = np.multiply(array_to_scale, max_val)
     return scaled_array
 
 
-def process_data(path, scan_img_size=32):
+def process_data(path, scan_img_size=32, no_img=False):
     """
     Load data from file.
     Return numpy array of processed data in form [[(theta, distance), steer_angle], ...]
     """
-    read_into_documents(path)
+    read_into_documents(path, no_img)
     num_docs = len(documents)
     scan_img_center = int(scan_img_size / 2)
     # Initialize output array.
     x_scan_data = np.zeros((num_docs, scan_img_size, scan_img_size))
-    x_img_data = np.zeros((num_docs, 128, 128, 1))
+    x_img_data = np.zeros((num_docs, 80, 128, 1))
     y_data = np.zeros((num_docs, 2))
 
     for i in range(0, num_docs):
@@ -145,13 +156,12 @@ def process_data(path, scan_img_size=32):
         # Insert joystick positions to y_data.
         y_data[i, 0] = doc["Joystick X"]
         y_data[i, 1] = doc["Joystick Y"]
-        x_img_data[i, :, :, 0] = doc["Image"] / 255
+        x_img_data[i, :, :, 0] = doc["Image"]
 
         # Generate numpy arrays from scan data.
-        thetas = np.array(doc["Theta"])
-        dists = np.array(doc["Distance"])
+        thetas = doc["Theta"]
+        dists = doc["Distance"]
         dists = log_scale_list(dists, scan_img_center - 1)
-        # thetas, dists = trim_array(thetas, dists, trim_to_size=250)  # Trim size of scan.
         # Calculate "true" x-y-coordinates for plotting scan.
         x_scan_coords = dists * np.sin(np.radians(thetas))
         y_scan_coords = dists * np.cos(np.radians(thetas))
@@ -164,8 +174,9 @@ def process_data(path, scan_img_size=32):
         # Insert scan data to output array.
         x_scan_data[i, y_scan_coords, x_scan_coords] = 1
 
-    # Normalize joystick positions to range [-1, 1].
-    y_data[:, :] /= 127
+    # Normalize joystick positions to range [-1, 1], pixel values to [0, 1].
+    y_data = y_data / 127
+    x_img_data = x_img_data / 255
     x_scan_data = np.expand_dims(x_scan_data, axis=3)
 
     return x_scan_data, x_img_data, y_data
@@ -211,25 +222,29 @@ def test_train_split(x_data, y_data, test_size=1500):
 
 if __name__ == "__main__":
     # path_to_data = "python/DriverTraining/ScanData/BetterData.csv"
-    path_to_data = "python/DriverTraining/ScanData/HouseScan1.csv"
+    path_to_data = "python/DriverTraining/ScanData/extra_test.csv"
+    path_to_no_img_data = "python\DriverTraining\ScanData\OldScans\TrainingData.csv"
+
     start_time = time.time()
     print("Test for `data_manager.py`\n")
+    # read_into_documents(path_to_no_img_data, no_img=True)
 
-    read_into_documents("python/DriverTraining/ScanData/image_csv.csv")
-    print(F"Image\n{documents[0]['Image']}")
-    cv2.imshow("Image from csv.", documents[0]["Image"])
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    plt.imshow(documents[0]["Image"], cmap=cm.gray)
-    plt.show()
+    # read_into_documents(
+    #     "python/DriverTraining/ScanData/image_csv.csv", no_img=False)
+    # # print(F"Image\n{documents[0]['Image']}")
+    # # cv2.imshow("Image from csv.", documents[0]["Image"])
+    # # cv2.waitKey(0)
+    # # cv2.destroyAllWindows()
+    # plt.imshow(documents[0]["Image"], cmap=cm.gray)
+    # plt.show()
 
     # """Begin testing for Data Manager."""
-    # x_data, y_data = process_data(path_to_data)
+    x_data, x_img_data, y_data = process_data(path_to_data)
 
-    # img = x_data[-1, :, :]
-    # print(F"Shape of img: {img.shape}\n")
-    # plt.imshow(img, cmap=cm.gray)
-    # plt.show()
+    img = x_data[-1, :, :]
+    print(F"Shape of img: {img.shape}\n")
+    plt.imshow(img, cmap=cm.gray)
+    plt.show()
 
     # print(F"Shape of returned x_data: {x_data.shape}\n")
     # print(F"Shape of returned y_data: {y_data.shape}\n")
