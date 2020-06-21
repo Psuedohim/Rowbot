@@ -8,3 +8,4 @@ python/DriverTraining/ScanData/OrigHouseScan1 copy.csv
 python/DriverTraining/ScanData/OrigHouseScan1.csv
 fdeep/
 *.h5
+*.csv
