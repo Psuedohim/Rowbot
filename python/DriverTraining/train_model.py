@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
+from tensorflow.keras import layers, regularizers
 import time
 import matplotlib.pyplot as plt
 
@@ -26,22 +26,42 @@ def get_uncompiled_lstm(input_size):
 
 def get_uncompiled_cnn(input_size):
     activation = "relu"
+    reg = regularizers.l1(0.0001)
     scan_input = keras.Input(shape=input_size, name="scan")
-    img_input = keras.Input(shape=(128, 128, 1), name="image")
+    img_input = keras.Input(shape=(80, 128, 1), name="image")
     # Process Scan input.
     x_scan = layers.Conv2D(1, 3, padding="same",
                            activation=activation)(scan_input)
+    x_scan = layers.Dropout(0.2)(x_scan)
     x_scan = layers.MaxPooling2D(pool_size=2)(x_scan)
+    x_scan = layers.Dense(16, activation=activation)(x_scan)
     x_scan = layers.Flatten()(x_scan)
 
     # Process Image input.
     x_img = layers.Conv2D(16, 3, padding="same",
                           activation=activation)(img_input)
+    x_img = layers.MaxPooling2D(pool_size=2)(x_img)
+    x_img = layers.Dropout(0.25)(x_img)
+    x_img = layers.Conv2D(3, 5, padding="same",
+                          activation=activation)(x_img)
+    x_img = layers.MaxPooling2D(pool_size=2)(x_img)
+    # x_img = layers.Dropout(0.1)(x_img)
+    x_img = layers.Conv2D(3, 7, padding="same",
+                          activation=activation,
+                          activity_regularizer=reg)(x_img)
     x_img = layers.AveragePooling2D(pool_size=2)(x_img)
-    x_img = layers.Dropout(0.2)(x_img)
-    x_img = layers.Conv2D(32, 3, padding="same", activation=activation)(x_img)
-    x_img = layers.AveragePooling2D(pool_size=2)(x_img)
-    x_img = layers.Dropout(0.2)(x_img)
+    # x_img = layers.Dropout(0.1)(x_img)
+    # x_img = layers.Conv2D(64, 3, padding="valid", activation=activation)(x_img)
+    # x_img = layers.MaxPooling2D(pool_size=2)(x_img)
+    # x_img = layers.Dropout(0.2)(x_img)
+    # x_img = layers.Conv2D(128, 5, padding="valid",
+    #                       activation=activation)(x_img)
+    # x_img = layers.MaxPooling2D(pool_size=2)(x_img)
+    # x_img = layers.Dropout(0.2)(x_img)
+    # x_img = layers.Conv2D(512, 5, padding="same", activation=activation)(x_img)
+    # x_img = layers.AveragePooling2D(pool_size=2)(x_img)
+    # x_img = layers.Dropout(0.2)(x_img)
+    x_img = layers.Dense(16, activation=activation)(x_img)
     x_img = layers.Flatten()(x_img)
 
     # Concatenate inputs to singular tensor.
@@ -49,12 +69,17 @@ def get_uncompiled_cnn(input_size):
 
     # x = layers.Dropout(0.1)(x)
     # x = layers.Dropout(0.2)(x)
-    x = layers.Dense(1028, activation="linear", name="dense_1")(x)
-    x = layers.Dense(256, activation=activation, name="dense_2")(x)
-    x = layers.Dense(256, activation=activation, name="dense_3")(x)
-    x = layers.Dense(256, activation=activation, name="dense_4")(x)
-    x = layers.Dense(256, activation=activation, name="dense_5")(x)
-    x = layers.Dense(16, activation="linear", name="dense_6")(x)
+    # x = layers.Dense(1028, activation="relu", name="dense_1")(x)
+    # x = layers.Dense(1028, activation="relu", name="dense_1_1")(x)
+    # x = layers.Dense(256, activation=activation, name="dense_2")(x)
+    # x = layers.Dense(128, activation=activation, name="dense_3")(x)
+    # x = layers.Dense(64, activation=activation, name="dense_4")(x)
+    x = layers.Dense(32, activation=activation,
+                     name="dense_5", activity_regularizer=reg)(x)
+    x = layers.Dense(4, activation=activation, name="dense_6",
+                     activity_regularizer=reg)(x)
+    x = layers.Dense(4, activation=activation, name="dense_7",
+                     activity_regularizer=reg)(x)
     output_x = layers.Dense(2, activation="tanh",
                             name="x_y_out")(x)  # Tanh: [-1, 1]
     model = keras.Model(inputs=[scan_input, img_input], outputs=output_x)
@@ -77,19 +102,17 @@ def get_compiled_model(to_compile="", input_size=(32, 32, 1)):
         # optimizer="Nadam",
         # optimizer=tf.keras.optimizers.SGD(),
         # Loss function to minimize
-        loss="mae",
-        # loss=tf.keras.losses.MeanAbsolutePercentageError(),
+        # loss="mae",
         # loss=tf.keras.losses.CosineSimilarity(),
         # loss=tf.keras.losses.MeanSquaredLogarithmicError(),
-        # loss=tf.keras.losses.LogCosh(),  # Best so far.
+        loss=tf.keras.losses.LogCosh(),  # Best so far.
         # loss=tf.keras.losses.Huber(),
         # loss=tf.keras.losses.MeanSquaredError(),
         # List of metrics to monitor
-        # metrics=[tf.keras.metrics.MeanAbsoluteError()],
         metrics=[
-            tf.keras.metrics.MeanAbsoluteError(),
+            # tf.keras.metrics.MeanAbsoluteError(),
             tf.keras.metrics.MeanSquaredError(),
-            tf.keras.metrics.MeanSquaredLogarithmicError(),
+            # tf.keras.metrics.MeanSquaredLogarithmicError(),
         ],
     )
 
@@ -150,16 +173,30 @@ if __name__ == "__main__":
     start_time = time.time()
 
     img_size = 64
-    batch_size = 256
-    num_epochs = 100
+    batch_size = 128
+    num_epochs = 50
 
     path_to_train = "python\DriverTraining\ScanData\ImgScanData_training.csv"
+    path_to_train_no_img = "python\DriverTraining\ScanData\OldScans\TrainingData.csv"
     path_to_test = "python\DriverTraining\ScanData\ImgScanData_testing.csv"
+    path_to_test_no_img = "python\DriverTraining\ScanData\OldScans\TestData.csv"
 
     x_scan_train, x_img_train, y_train = process_data(
         path_to_train, scan_img_size=img_size)
     x_scan_test, x_img_test, y_test = process_data(
         path_to_test, scan_img_size=img_size)
+    x_scan_train_gen, x_img_train_gen, y_train_gen = process_data(
+        path_to_train_no_img, scan_img_size=img_size, no_img=True)
+    x_scan_test_gen, x_img_test_gen, y_test_gen = process_data(
+        path_to_test_no_img, scan_img_size=img_size, no_img=True)
+
+    x_scan_train = np.append(x_scan_train, x_scan_train_gen, axis=0)
+    x_img_train = np.append(x_img_train, x_img_train_gen, axis=0)
+    y_train = np.append(y_train, y_train_gen, axis=0)
+
+    x_scan_test = np.append(x_scan_test, x_scan_test_gen, axis=0)
+    x_img_test = np.append(x_img_test, x_img_test_gen, axis=0)
+    y_test = np.append(y_test, y_test_gen, axis=0)
 
     model = get_compiled_model(
         to_compile="cnn", input_size=x_scan_train.shape[1:])
@@ -180,25 +217,54 @@ if __name__ == "__main__":
     # print(F"x 1-hot: {y_train[:,0].shape}\n")
     # print(F"y 1-hot: {y_train[:,1].shape}\n")
 
-    print("Fit model on training data")
-    history = model.fit(
-        [x_scan_train, x_img_train],
-        y_train,
-        batch_size=batch_size,
-        epochs=num_epochs,
-        verbose=1,
-    )
+    train_again = 'y'
+    while (train_again == 'y'):
+        print("Fit model on training data")
+        history = model.fit(
+            [x_scan_train, x_img_train],
+            y_train,
+            batch_size=batch_size,
+            epochs=num_epochs,
+            validation_data=([x_scan_test, x_img_test], y_test),
+            verbose=1,
+        )
 
-    print("\nEvaluate on test data.\n")
-    results = model.evaluate(
-        [x_scan_test, x_img_test], y_test, batch_size=batch_size)
-    print(F"Results: {results}\n")
+        print(history.history.keys())
+        # summarize history for loss
+        plt.plot(history.history['loss'])
+        plt.plot(history.history['val_loss'])
+        plt.plot(history.history['mean_squared_error'])
+        plt.plot(history.history['val_mean_squared_error'])
+        plt.title('model loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test', 'mse', 'val_mse'], loc='upper left')
+        plt.show()
+        train_again = input("Train again? (y/n): ")
+
+    # print(history.history.keys())
+    # summarize history for loss
+
+    # print("\nEvaluate on test data.\n")
+    # results = model.evaluate(
+    #     [x_scan_test, x_img_test], y_test, batch_size=batch_size)
+    # print(F"Results: {results}\n")
 
     save = input("Would you like to save the model? (y/n): ")
 
     if save == 'y':
         model.save("python/DriverTraining/trained_model.h5")
         print("Saved Model!")
+
+    # plt.plot(history.history['loss'])
+    # plt.plot(history.history['val_loss'])
+    # plt.plot(history.history['mean_squared_error'])
+    # plt.plot(history.history['val_mean_squared_error'])
+    # plt.title('model loss')
+    # plt.ylabel('loss')
+    # plt.xlabel('epoch')
+    # plt.legend(['train', 'test', 'mse', 'val_mse'], loc='upper left')
+    # plt.show()
 
     end_time = time.time()
 
