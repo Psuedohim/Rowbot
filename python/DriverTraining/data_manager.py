@@ -73,8 +73,9 @@ def read_into_documents(path, no_img):
                 temp_doc[label] = np.array(row[1:], dtype=np.int)
 
                 if no_img:
-                    img = np.empty((80, 128))
-                    temp_doc["Image"] = cv2.randn(img, (0), (255))
+                    # img = np.empty((80, 128))
+                    # temp_doc["Image"] = cv2.randn(img, (0), (255))
+                    temp_doc["Image"] = np.zeros((80, 128))
                     documents.append({
                         "Scan": temp_doc["Scan"],
                         "Joystick X": temp_doc["Joystick X"],
@@ -182,6 +183,25 @@ def process_data(path, scan_img_size=32, no_img=False):
     return x_scan_data, x_img_data, y_data
 
 
+def augment_append_data(x_scan_data, x_img_data, y_data):
+    start_time = time.time()
+    num_samples = x_scan_data.shape[0]
+    assert x_img_data.shape[0] == num_samples
+    assert y_data.shape[0] == num_samples
+    x_scan_aug = np.flip(x_scan_data, 2)
+    x_img_aug = np.flip(x_img_data, 2)
+    y_aug = np.copy(y_data)
+    y_aug[:, 0] *= -1
+
+    x_scan_data = np.append(x_scan_data, x_scan_aug, axis=0)
+    x_img_data = np.append(x_img_data, x_img_aug, axis=0)
+    y_data = np.append(y_data, y_aug, axis=0)
+
+    print(
+        F"Augmented {num_samples} samples in {time.time() - start_time} seconds\n")
+    return x_scan_data, x_img_data, y_data
+
+
 def gen_lstm_inputs(x_data, y_data, t_steps, skip_steps):
     print(F"Init X_Data: {x_data.shape}")
     while x_data.shape[0] % t_steps > 0:
@@ -208,21 +228,34 @@ def gen_categorical(y_data, num_classes):
     return to_categorical(y_data, num_classes=num_classes + 1)
 
 
-def test_train_split(x_data, y_data, test_size=1500):
-    x_train = x_data[:-test_size, :, :]
-    x_test = x_data[-test_size:, :, :]
-    y_train = y_data[:-test_size, :]
-    y_test = y_data[-test_size:, :]
+def test_train_split(scan_data, img_data, y_data, test_size=0.2):
+    data_size = scan_data.shape[0]
+    assert img_data.shape[0] == data_size
+    assert y_data.shape[0] == data_size
+    if test_size < 1:
+        test_size = int(data_size * test_size) # Take fraction of dataset.
+    
+    test_idx = np.random.randint(0, data_size, test_size)
+    test_idx = np.array(list(test_idx))
 
-    y_train = y_train.astype("float32")
-    y_test = y_test.astype("float32")
+    scan_test = scan_data[test_idx]
+    img_test = img_data[test_idx]
+    y_test = y_data[test_idx]
 
-    return x_test, x_train, y_test, y_train
+    scan_train = np.delete(scan_data, test_idx, axis=0)
+    img_train = np.delete(img_data, test_idx, axis=0)
+    y_train = np.delete(y_data, test_idx, axis=0)
+
+    return scan_test, img_test, y_test, scan_train, img_train, y_train
+    
+
+
 
 
 if __name__ == "__main__":
     # path_to_data = "python/DriverTraining/ScanData/BetterData.csv"
-    path_to_data = "python/DriverTraining/ScanData/extra_test.csv"
+    # path_to_data = "python/DriverTraining/ScanData/extra_test.csv"
+    path_to_data = "python/DriverTraining/ScanData/extra_train.csv"
     path_to_no_img_data = "python\DriverTraining\ScanData\OldScans\TrainingData.csv"
 
     start_time = time.time()
@@ -239,12 +272,23 @@ if __name__ == "__main__":
     # plt.show()
 
     # """Begin testing for Data Manager."""
-    x_data, x_img_data, y_data = process_data(path_to_data)
+    x_data, x_img_data, y_data = process_data(path_to_data, 64)
+    # x_data, x_img_data, y_data = x_data[:, :,
+    #                                     :], x_img_data[:, :, :], y_data[:, :]
+    x_data, x_img_data, y_data = augment_append_data(
+        x_data, x_img_data, y_data)
 
-    img = x_data[-1, :, :]
-    print(F"Shape of img: {img.shape}\n")
-    plt.imshow(img, cmap=cm.gray)
-    plt.show()
+    scan_val, img_val, y_val, scan_tr, img_tr, y_tr = test_train_split(x_data, x_img_data, y_data)
+    print(F"Train size: {img_tr.shape}\tVal size: {img_val.shape}")
+    # i_to_show = 0
+    # i_aug_to_show = int(x_data.shape[0] / 2) + i_to_show
+    for i in range(0, y_data.shape[0]):
+        scan_img = x_data[i, :, :, 0].reshape((64, 64))
+        img = x_img_data[i, :, :, 0].reshape((80, 128))
+        print(F"Y Data: {y_data[i,:]}")
+        plt.imshow(img, cmap=cm.gray)
+        # plt.imshow(scan_img, cmap=cm.gray)
+        plt.show()
 
     # print(F"Shape of returned x_data: {x_data.shape}\n")
     # print(F"Shape of returned y_data: {y_data.shape}\n")
