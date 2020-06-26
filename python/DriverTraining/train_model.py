@@ -5,7 +5,38 @@ from tensorflow.keras import layers, regularizers
 import time
 import matplotlib.pyplot as plt
 
-from data_manager import process_data, test_train_split, gen_lstm_inputs, gen_categorical
+from data_manager import process_data, test_train_split, gen_lstm_inputs, gen_categorical, augment_append_data
+
+params = {
+    "scan_shape": (64, 64, 1),
+    "img_shape": (80, 128, 1),
+    "activation": "relu",
+    "padding": "same",
+    "regularizer": regularizers.l1(0.0001),
+    "conv1n": 8,
+    "conv2n": 32,
+    "conv3n": 32,
+    "conv4n": 32,
+    "conv1f": 3,
+    "conv2f": 3,
+    "conv3f": 3,
+    "conv4f": 3,
+    "conv1s": 1,
+    "conv2s": 1,
+    "conv3s": 1,
+    "conv4s": 1,
+    "pool1s": 2,
+    "pool2s": 2,
+    "pool3s": 2,
+    "dense1n": 64,
+    "dense2n": 64,
+    "dense3n": 64,
+    "dense4n": 32,
+    "dense5n": 32,
+    "dense6n": 32,
+    "dropout": 0.0,
+    "output_activation": "tanh",
+}
 
 
 def get_uncompiled_lstm(input_size):
@@ -24,99 +55,136 @@ def get_uncompiled_lstm(input_size):
     return model
 
 
-def get_uncompiled_cnn(input_size):
-    activation = "relu"
-    reg = regularizers.l1(0.0001)
-    scan_input = keras.Input(shape=input_size, name="scan")
-    img_input = keras.Input(shape=(80, 128, 1), name="image")
+def get_compiled_cnn(params):
+    activation = params["activation"]
+    padding = params["padding"]
+    reg = params["regularizer"]
+    scan_input = keras.Input(shape=params["scan_shape"], name="scan_input")
+    img_input = keras.Input(shape=params["img_shape"], name="image_input")
+
     # Process Scan input.
-    x_scan = layers.Conv2D(1, 3, padding="same",
-                           activation=activation)(scan_input)
-    x_scan = layers.Dropout(0.2)(x_scan)
-    x_scan = layers.MaxPooling2D(pool_size=2)(x_scan)
-    x_scan = layers.Dense(16, activation=activation)(x_scan)
+    x_scan = layers.Conv2D(params["conv1n"],
+                           params["conv1f"],
+                           strides=params["conv1s"],
+                           padding=padding,
+                           activation=activation,
+                           name="conv1")(scan_input)
+    # x_scan = layers.Dropout(0.2)(x_scan)
+    x_scan = layers.MaxPooling2D(
+        pool_size=params["pool1s"], name="pool1")(x_scan)
+    # x_scan = layers.Dense(16, activation=activation)(x_scan)
     x_scan = layers.Flatten()(x_scan)
 
     # Process Image input.
-    x_img = layers.Conv2D(16, 3, padding="same",
-                          activation=activation)(img_input)
-    x_img = layers.MaxPooling2D(pool_size=2)(x_img)
-    x_img = layers.Dropout(0.25)(x_img)
-    x_img = layers.Conv2D(3, 5, padding="same",
-                          activation=activation)(x_img)
-    x_img = layers.MaxPooling2D(pool_size=2)(x_img)
+    x_img = layers.Conv2D(params["conv2n"], 
+                          params["conv2f"], 
+                          strides=params["conv2s"],
+                          padding=padding,
+                          activation=activation, 
+                          name="conv2")(img_input)
+    x_img = layers.AveragePooling2D(
+        pool_size=params["pool2s"], name="pool2")(x_img)
+    # x_img = layers.Dropout(0.25)(x_img)
+    x_img = layers.Conv2D(params["conv3n"], 
+                          params["conv3f"], 
+                          strides=params["conv3s"],
+                          padding=padding,
+                          activation=activation, 
+                          name="conv3")(img_input)
+    x_img = layers.AveragePooling2D(pool_size=3)(x_img)
     # x_img = layers.Dropout(0.1)(x_img)
-    x_img = layers.Conv2D(3, 7, padding="same",
+    x_img = layers.Conv2D(params["conv4n"], 
+                          params["conv4f"], 
+                          strides=params["conv4s"],
+                          padding=padding,
                           activation=activation,
-                          activity_regularizer=reg)(x_img)
-    x_img = layers.AveragePooling2D(pool_size=2)(x_img)
-    # x_img = layers.Dropout(0.1)(x_img)
-    # x_img = layers.Conv2D(64, 3, padding="valid", activation=activation)(x_img)
-    # x_img = layers.MaxPooling2D(pool_size=2)(x_img)
-    # x_img = layers.Dropout(0.2)(x_img)
-    # x_img = layers.Conv2D(128, 5, padding="valid",
-    #                       activation=activation)(x_img)
-    # x_img = layers.MaxPooling2D(pool_size=2)(x_img)
-    # x_img = layers.Dropout(0.2)(x_img)
-    # x_img = layers.Conv2D(512, 5, padding="same", activation=activation)(x_img)
-    # x_img = layers.AveragePooling2D(pool_size=2)(x_img)
-    # x_img = layers.Dropout(0.2)(x_img)
-    x_img = layers.Dense(16, activation=activation)(x_img)
+                          activity_regularizer=reg, 
+                          name="conv4")(x_img)
+    x_img = layers.AveragePooling2D(
+        pool_size=params["pool3s"], name="pool3")(x_img)
     x_img = layers.Flatten()(x_img)
 
     # Concatenate inputs to singular tensor.
     x = layers.Concatenate(axis=1)([x_scan, x_img])
 
-    # x = layers.Dropout(0.1)(x)
-    # x = layers.Dropout(0.2)(x)
-    # x = layers.Dense(1028, activation="relu", name="dense_1")(x)
-    # x = layers.Dense(1028, activation="relu", name="dense_1_1")(x)
-    # x = layers.Dense(256, activation=activation, name="dense_2")(x)
-    # x = layers.Dense(128, activation=activation, name="dense_3")(x)
-    # x = layers.Dense(64, activation=activation, name="dense_4")(x)
-    x = layers.Dense(32, activation=activation,
+    x = layers.Dense(params["dense1n"], activation=activation,
+                     name="dense_1", activity_regularizer=reg)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dense(params["dense2n"], activation=activation,
+                     name="dense_2", activity_regularizer=reg)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dense(params["dense3n"], activation=activation,
+                     name="dense_3", activity_regularizer=reg)(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dense(params["dense4n"], activation=activation,
+                     name="dense_4", activity_regularizer=reg)(x)
+    x = layers.Dropout(params["dropout"])(x)
+    x = layers.Dense(params["dense5n"], activation=activation,
                      name="dense_5", activity_regularizer=reg)(x)
-    x = layers.Dense(4, activation=activation, name="dense_6",
-                     activity_regularizer=reg)(x)
-    x = layers.Dense(4, activation=activation, name="dense_7",
-                     activity_regularizer=reg)(x)
-    output_x = layers.Dense(2, activation="tanh",
+    x = layers.Dropout(params["dropout"])(x)
+    x = layers.Dense(params["dense6n"], activation=activation,
+                     name="dense_6", activity_regularizer=reg)(x)
+    x = layers.Dropout(params["dropout"])(x)
+
+    # Define output layer with two nodes for virtual-x-y positions.
+    output_x = layers.Dense(2, activation=params["output_activation"],
                             name="x_y_out")(x)  # Tanh: [-1, 1]
     model = keras.Model(inputs=[scan_input, img_input], outputs=output_x)
-    return model
-
-
-def get_compiled_model(to_compile="", input_size=(32, 32, 1)):
-    if to_compile == "cnn":
-        model = get_uncompiled_cnn(input_size)
-    elif to_compile == "lstm":
-        model = get_uncompiled_lstm(input_size)
-    else:
-        raise TypeError("What model to compile? (cnn/lstm/...")
 
     model.compile(
         # optimizer=keras.optimizers.Adadelta(),  # Optimizer
         optimizer=keras.optimizers.Adam(learning_rate=0.0001),  # Optimizer
         # optimizer="RMSprop",
-        # optimizer="Ftrl",
-        # optimizer="Nadam",
         # optimizer=tf.keras.optimizers.SGD(),
         # Loss function to minimize
         # loss="mae",
         # loss=tf.keras.losses.CosineSimilarity(),
         # loss=tf.keras.losses.MeanSquaredLogarithmicError(),
-        loss=tf.keras.losses.LogCosh(),  # Best so far.
+        # loss=tf.keras.losses.LogCosh(),  # Best so far.
+        loss=tf.keras.losses.MeanSquaredError(),
+        # loss=keras.losses.MeanAbsoluteError(),
         # loss=tf.keras.losses.Huber(),
         # loss=tf.keras.losses.MeanSquaredError(),
         # List of metrics to monitor
         metrics=[
-            # tf.keras.metrics.MeanAbsoluteError(),
-            tf.keras.metrics.MeanSquaredError(),
-            # tf.keras.metrics.MeanSquaredLogarithmicError(),
+            tf.keras.metrics.MeanAbsoluteError(),
+            # tf.keras.metrics.MeanSquaredError(),
         ],
     )
-
     return model
+
+
+# def get_compiled_model(to_compile="", input_size=(32, 32, 1)):
+    # if to_compile == "cnn":
+    #     model = get_uncompiled_cnn(input_size)
+    # elif to_compile == "lstm":
+    #     model = get_uncompiled_lstm(input_size)
+    # else:
+    #     raise TypeError("What model to compile? (cnn/lstm/...")
+
+    # model.compile(
+    #     # optimizer=keras.optimizers.Adadelta(),  # Optimizer
+    #     optimizer=keras.optimizers.Adam(learning_rate=0.0001),  # Optimizer
+    #     # optimizer="RMSprop",
+    #     # optimizer="Ftrl",
+    #     # optimizer="Nadam",
+    #     # optimizer=tf.keras.optimizers.SGD(),
+    #     # Loss function to minimize
+    #     # loss="mae",
+    #     # loss=tf.keras.losses.CosineSimilarity(),
+    #     # loss=tf.keras.losses.MeanSquaredLogarithmicError(),
+    #     loss=tf.keras.losses.LogCosh(),  # Best so far.
+    #     # loss=tf.keras.losses.Huber(),
+    #     # loss=tf.keras.losses.MeanSquaredError(),
+    #     # List of metrics to monitor
+    #     metrics=[
+    #         # tf.keras.metrics.MeanAbsoluteError(),
+    #         tf.keras.metrics.MeanSquaredError(),
+    #         # tf.keras.metrics.MeanSquaredLogarithmicError(),
+    #     ],
+    # )
+
+    # return model
 
 
 def main_lstm(x_data, y_data):
@@ -174,11 +242,11 @@ if __name__ == "__main__":
 
     img_size = 64
     batch_size = 128
-    num_epochs = 50
+    num_epochs = 100
 
     path_to_train = "python\DriverTraining\ScanData\ImgScanData_training.csv"
     path_to_train_no_img = "python\DriverTraining\ScanData\OldScans\TrainingData.csv"
-    path_to_test = "python\DriverTraining\ScanData\ImgScanData_testing.csv"
+    path_to_test = "python\DriverTraining\ScanData\CSUArtScan.csv"
     path_to_test_no_img = "python\DriverTraining\ScanData\OldScans\TestData.csv"
 
     x_scan_train, x_img_train, y_train = process_data(
@@ -187,60 +255,244 @@ if __name__ == "__main__":
         path_to_test, scan_img_size=img_size)
     x_scan_train_gen, x_img_train_gen, y_train_gen = process_data(
         path_to_train_no_img, scan_img_size=img_size, no_img=True)
-    x_scan_test_gen, x_img_test_gen, y_test_gen = process_data(
-        path_to_test_no_img, scan_img_size=img_size, no_img=True)
+    # x_scan_test_gen, x_img_test_gen, y_test_gen = process_data(
+    #     path_to_test_no_img, scan_img_size=img_size, no_img=True)
 
     x_scan_train = np.append(x_scan_train, x_scan_train_gen, axis=0)
     x_img_train = np.append(x_img_train, x_img_train_gen, axis=0)
     y_train = np.append(y_train, y_train_gen, axis=0)
 
-    x_scan_test = np.append(x_scan_test, x_scan_test_gen, axis=0)
-    x_img_test = np.append(x_img_test, x_img_test_gen, axis=0)
-    y_test = np.append(y_test, y_test_gen, axis=0)
+    # x_scan_test = np.append(x_scan_test, x_scan_test_gen, axis=0)
+    # x_img_test = np.append(x_img_test, x_img_test_gen, axis=0)
+    # y_test = np.append(y_test, y_test_gen, axis=0)
 
-    model = get_compiled_model(
-        to_compile="cnn", input_size=x_scan_train.shape[1:])
-    # x_test, x_train, y_test, y_train = test_train_split(
-    #     x_data, y_data, test_size=1000)
-    # model = main_categorical(x_data, 20)
-    # y_data = gen_categorical(y_data, 20)
+    x_scan_train, x_img_train, y_train = augment_append_data(
+        x_scan_train, x_img_train, y_train)
+    x_scan_test, x_img_test, y_test = augment_append_data(
+        x_scan_test, x_img_test, y_test)
 
-    # test_size = 2500
+    scan_val, img_val, y_val, scan_train, img_train, y_train = test_train_split(
+        x_scan_train, x_img_train, y_train)
 
-    # x_train = x_data[:-test_size]
-    # y_train = y_data[:-test_size]
+    param_test_list = []
+    param_test_0 = params.copy()
+    param_test_0["activation"] = "relu"
+    param_test_0["conv1n"] = 64  # Conv on scan image.
+    param_test_0["conv2n"] = 128
+    param_test_0["conv3n"] = 256
+    param_test_0["conv4n"] = 256
+    param_test_0["conv1f"] = 1
+    param_test_0["conv2f"] = 1
+    param_test_0["conv3f"] = 1
+    param_test_0["conv4f"] = 1
+    # param_test_0["conv1s"] = 3
+    # param_test_0["conv2s"] = 3
+    # param_test_0["conv3s"] = 3
+    # param_test_0["conv4s"] = 3
+    param_test_0["pool1s"] = 6
+    param_test_0["pool2s"] = 6
+    param_test_0["pool3s"] = 6
+    param_test_0["dense1n"] = 1028
+    param_test_0["dense2n"] = 128
+    param_test_0["dropout"] = 0.5
+    param_test_list.append(param_test_0)
 
-    # x_test = x_data[-test_size:]
-    # y_test = y_data[-test_size:]
+    """Winning paramaters so far."""
+    param_test_1 = params.copy()
+    param_test_1["activation"] = "relu"
+    param_test_1["conv1n"] = 32  # Conv on scan image.
+    param_test_1["conv2n"] = 64
+    param_test_1["conv3n"] = 128
+    param_test_1["conv4n"] = 256
+    param_test_1["conv1f"] = 1
+    param_test_1["conv2f"] = 1
+    param_test_1["conv3f"] = 1
+    param_test_1["conv4f"] = 1
+    param_test_1["pool1s"] = 6
+    param_test_1["pool2s"] = 6
+    param_test_1["pool3s"] = 6
+    param_test_1["dense1n"] = 1028
+    param_test_1["dense2n"] = 128
+    param_test_1["dropout"] = 0.5
+    param_test_list.append(param_test_1)
 
-    model.summary()
-    # print(F"x 1-hot: {y_train[:,0].shape}\n")
-    # print(F"y 1-hot: {y_train[:,1].shape}\n")
+    param_test_2 = params.copy()
+    param_test_2["activation"] = "relu"
+    param_test_2["conv1n"] = 32  # Conv on scan image.
+    param_test_2["conv2n"] = 64
+    param_test_2["conv3n"] = 128
+    param_test_2["conv4n"] = 256
+    param_test_2["conv1f"] = 1
+    param_test_2["conv2f"] = 1
+    param_test_2["conv3f"] = 1
+    param_test_2["conv4f"] = 1
+    param_test_2["pool1s"] = 6
+    param_test_2["pool2s"] = 6
+    param_test_2["pool3s"] = 6
+    param_test_2["dense1n"] = 1028
+    param_test_2["dense2n"] = 1028
+    param_test_2["dropout"] = 0.5
+    param_test_list.append(param_test_2)
 
-    train_again = 'y'
-    while (train_again == 'y'):
+    # param_test_3 = params.copy()
+    # param_test_3["activation"] = "tanh"
+    # param_test_3["conv1n"] = 16  # Conv on scan image.
+    # param_test_3["conv2n"] = 64
+    # param_test_3["conv3n"] = 128
+    # param_test_3["conv4n"] = 256
+    # param_test_3["conv1s"] = 1
+    # param_test_3["conv2s"] = 1
+    # param_test_3["conv3s"] = 1
+    # param_test_3["conv4s"] = 1
+    # param_test_3["pool1s"] = 6
+    # param_test_3["pool2s"] = 6
+    # param_test_3["pool3s"] = 6
+    # param_test_3["dense1n"] = 1028
+    # param_test_3["dense2n"] = 128
+    # param_test_3["dropout"] = 0.5
+    # param_test_list.append(param_test_3)
+
+    # param_test_4 = params.copy()
+    # param_test_4["activation"] = "tanh"
+    # param_test_4["conv1n"] = 8  # Conv on scan image.
+    # param_test_4["conv2n"] = 64
+    # param_test_4["conv3n"] = 128
+    # param_test_4["conv4n"] = 256
+    # param_test_4["conv1s"] = 1
+    # param_test_4["conv2s"] = 1
+    # param_test_4["conv3s"] = 1
+    # param_test_4["conv4s"] = 1
+    # param_test_4["pool1s"] = 6
+    # param_test_4["pool2s"] = 6
+    # param_test_4["pool3s"] = 6
+    # param_test_4["dense1n"] = 1028
+    # param_test_4["dense2n"] = 128
+    # param_test_4["dropout"] = 0.5
+    # param_test_list.append(param_test_4)
+
+    # param_test_5 = params.copy()
+    # param_test_5["activation"] = None
+    # param_test_5["conv1n"] = 16  # Conv on scan image.
+    # param_test_5["conv2n"] = 64
+    # param_test_5["conv3n"] = 128
+    # param_test_5["conv4n"] = 256
+    # param_test_5["conv1s"] = 1
+    # param_test_5["conv2s"] = 1
+    # param_test_5["conv3s"] = 1
+    # param_test_5["conv4s"] = 1
+    # param_test_5["pool1s"] = 6
+    # param_test_5["pool2s"] = 6
+    # param_test_5["pool3s"] = 6
+    # param_test_5["dense1n"] = 1028
+    # param_test_5["dense2n"] = 128
+    # param_test_5["dropout"] = 0.5
+    # param_test_list.append(param_test_5)
+
+    # param_test_6 = params.copy()
+    # param_test_6["activation"] = None
+    # param_test_6["conv1n"] = 8  # Conv on scan image.
+    # param_test_6["conv2n"] = 64
+    # param_test_6["conv3n"] = 128
+    # param_test_6["conv4n"] = 256
+    # param_test_6["conv1s"] = 1
+    # param_test_6["conv2s"] = 1
+    # param_test_6["conv3s"] = 1
+    # param_test_6["conv4s"] = 1
+    # param_test_6["pool1s"] = 6
+    # param_test_6["pool2s"] = 6
+    # param_test_6["pool3s"] = 6
+    # param_test_6["dense1n"] = 1028
+    # param_test_6["dense2n"] = 128
+    # param_test_6["dropout"] = 0.5
+    # param_test_list.append(param_test_6)
+
+    # param_test_3 = params.copy()
+    # param_test_3["activation"] = "relu"
+    # param_test_3["conv1n"] = 8  # Conv on scan image.
+    # param_test_3["conv2n"] = 64
+    # param_test_3["conv3n"] = 128
+    # param_test_3["conv4n"] = 256
+    # param_test_3["pool3s"] = 6
+    # param_test_3["dense1n"] = 1028
+    # param_test_3["dense2n"] = 128
+    # param_test_list.append(param_test_3)
+
+    # param_test_4 = params.copy()
+    # param_test_4["activation"] = "relu"
+    # param_test_4["conv1n"] = 8  # Conv on scan image.
+    # param_test_4["conv2n"] = 64
+    # param_test_4["conv3n"] = 128
+    # param_test_4["conv4n"] = 256
+    # param_test_4["pool3s"] = 6
+    # param_test_4["dense1n"] = 2048
+    # param_test_4["dense2n"] = 1024
+    # param_test_4["dense3n"] = 512
+    # param_test_4["dense4n"] = 512
+    # param_test_4["dense5n"] = 512
+    # param_test_4["dense6n"] = 512
+    # param_test_list.append(param_test_4)
+
+    # Append default group to end, acts as control group.
+    param_test_list.append(params.copy())  # Default settings.
+
+    # for parameters in param_test_list:
+    for i in range(0, len(param_test_list)):
+        print(F"*\n*\n*\n\tTesting Model no. {i}\n*\n*\n*")
+        parameters = param_test_list[i]
+        model = get_compiled_cnn(parameters)
+        # keras.utils.plot_model(model , to_file=F"models\modelArch{i}.png")
+        model.summary()
+        my_callbacks = [keras.callbacks.EarlyStopping(patience=3)]
+
+        # train_again = 'y'
+        # while (train_again == 'y'):
         print("Fit model on training data")
         history = model.fit(
-            [x_scan_train, x_img_train],
+            [scan_train, img_train],
             y_train,
             batch_size=batch_size,
             epochs=num_epochs,
-            validation_data=([x_scan_test, x_img_test], y_test),
+            validation_data=([scan_val, img_val], y_val),
+            callbacks=my_callbacks,
             verbose=1,
         )
 
-        print(history.history.keys())
+        model.save(F"models/trained_model_{i}.h5")
+
+        results = model.evaluate(
+            [x_scan_test, x_img_test], y_test, batch_size=batch_size)
+
+        # print(history.history.keys())
         # summarize history for loss
-        plt.plot(history.history['loss'])
-        plt.plot(history.history['val_loss'])
-        plt.plot(history.history['mean_squared_error'])
-        plt.plot(history.history['val_mean_squared_error'])
-        plt.title('model loss')
+
+        fig, ax = plt.subplots()
+
+        major_ticks = np.arange(0.00, 0.25, 0.05)
+        minor_ticks = np.arange(0.0, 0.24, 0.01)
+        ax.set_yticks(major_ticks, minor=False)
+        ax.set_yticks(minor_ticks, minor=True)
+        ax.yaxis.grid(True, which='major')
+        ax.yaxis.grid(True, which='minor')
+
+        test_mae_line, = ax.plot([0, len(history.history['loss'])],
+                                 [results[1], results[1]])
+        test_loss_line, = ax.plot([0, len(history.history['loss'])], 
+                                  [results[0], results[0]])
+        val_mae_line, = ax.plot(history.history['val_mean_absolute_error'])
+        val_loss_line, = ax.plot(history.history['val_loss'])
+        mae_line, = ax.plot(history.history['mean_absolute_error'])
+        loss_line, = ax.plot(history.history['loss'])
+
+        plt.title(F'Metrics for Model {i}')
         plt.ylabel('loss')
         plt.xlabel('epoch')
-        plt.legend(['train', 'test', 'mse', 'val_mse'], loc='upper left')
-        plt.show()
-        train_again = input("Train again? (y/n): ")
+        plt.legend((loss_line, mae_line, val_loss_line, val_mae_line, test_loss_line, test_mae_line),
+                   ('train loss', 'train mae', 'val loss', 'val mae', 'test loss', 'test mae'))
+        # plt.legend((),('train_loss', 'val_loss', 'test_loss','mse', 'val_mse', 'test_mse'))
+        # plt.show()
+
+        plt.savefig(F"models\modelPlot{i}.png")
+        plt.clf()
 
     # print(history.history.keys())
     # summarize history for loss
@@ -250,21 +502,11 @@ if __name__ == "__main__":
     #     [x_scan_test, x_img_test], y_test, batch_size=batch_size)
     # print(F"Results: {results}\n")
 
-    save = input("Would you like to save the model? (y/n): ")
+    # save = input("Would you like to save the model? (y/n): ")
 
-    if save == 'y':
-        model.save("python/DriverTraining/trained_model.h5")
-        print("Saved Model!")
-
-    # plt.plot(history.history['loss'])
-    # plt.plot(history.history['val_loss'])
-    # plt.plot(history.history['mean_squared_error'])
-    # plt.plot(history.history['val_mean_squared_error'])
-    # plt.title('model loss')
-    # plt.ylabel('loss')
-    # plt.xlabel('epoch')
-    # plt.legend(['train', 'test', 'mse', 'val_mse'], loc='upper left')
-    # plt.show()
+    # if save == 'y':
+    #     model.save("python/DriverTraining/trained_model.h5")
+    #     print("Saved Model!")
 
     end_time = time.time()
 
