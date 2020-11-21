@@ -122,8 +122,6 @@ def read_into_documents(path, no_img):
     print(
         F"Filled {len(documents)} documents in {time.time() - start_time} seconds.\n")
 
-    # return documents
-
 
 def log_scale_list(array_to_scale, max_val):
     """
@@ -233,8 +231,8 @@ def test_train_split(scan_data, img_data, y_data, test_size=0.2):
     assert img_data.shape[0] == data_size
     assert y_data.shape[0] == data_size
     if test_size < 1:
-        test_size = int(data_size * test_size) # Take fraction of dataset.
-    
+        test_size = int(data_size * test_size)  # Take fraction of dataset.
+
     test_idx = np.random.randint(0, data_size, test_size)
     test_idx = np.array(list(test_idx))
 
@@ -247,62 +245,27 @@ def test_train_split(scan_data, img_data, y_data, test_size=0.2):
     y_train = np.delete(y_data, test_idx, axis=0)
 
     return scan_test, img_test, y_test, scan_train, img_train, y_train
-    
-
-
 
 
 if __name__ == "__main__":
-    # path_to_data = "python/DriverTraining/ScanData/BetterData.csv"
-    # path_to_data = "python/DriverTraining/ScanData/extra_test.csv"
-    path_to_data = "python/DriverTraining/ScanData/extra_train.csv"
-    path_to_no_img_data = "python\DriverTraining\ScanData\OldScans\TrainingData.csv"
+    path_to_data = "python/DriverTraining/ScanData/extra_test.csv"
 
     start_time = time.time()
     print("Test for `data_manager.py`\n")
-    # read_into_documents(path_to_no_img_data, no_img=True)
 
-    # read_into_documents(
-    #     "python/DriverTraining/ScanData/image_csv.csv", no_img=False)
-    # # print(F"Image\n{documents[0]['Image']}")
-    # # cv2.imshow("Image from csv.", documents[0]["Image"])
-    # # cv2.waitKey(0)
-    # # cv2.destroyAllWindows()
-    # plt.imshow(documents[0]["Image"], cmap=cm.gray)
-    # plt.show()
-
-    # """Begin testing for Data Manager."""
     x_data, x_img_data, y_data = process_data(path_to_data, 64)
-    # x_data, x_img_data, y_data = x_data[:, :,
-    #                                     :], x_img_data[:, :, :], y_data[:, :]
     x_data, x_img_data, y_data = augment_append_data(
         x_data, x_img_data, y_data)
 
-    scan_val, img_val, y_val, scan_tr, img_tr, y_tr = test_train_split(x_data, x_img_data, y_data)
+    scan_val, img_val, y_val, scan_tr, img_tr, y_tr = test_train_split(
+        x_data, x_img_data, y_data)
     print(F"Train size: {img_tr.shape}\tVal size: {img_val.shape}")
-    # i_to_show = 0
-    # i_aug_to_show = int(x_data.shape[0] / 2) + i_to_show
     for i in range(0, y_data.shape[0]):
         scan_img = x_data[i, :, :, 0].reshape((64, 64))
         img = x_img_data[i, :, :, 0].reshape((80, 128))
         print(F"Y Data: {y_data[i,:]}")
         plt.imshow(img, cmap=cm.gray)
-        # plt.imshow(scan_img, cmap=cm.gray)
         plt.show()
-
-    # print(F"Shape of returned x_data: {x_data.shape}\n")
-    # print(F"Shape of returned y_data: {y_data.shape}\n")
-    # # print(F"First of x_data: {x_data[0, :]}\n")
-    # print(F"First 10 of y_data: {y_data[0:10]}\n")
-    # """End testing for Data Manager."""
-
-    # max_dists = []
-    # read_into_documents(path_to_data)
-
-    # for doc in documents:
-    #     max_dists.append(max(doc["Distance"]))
-
-    # print(F"Max Distance from all scans: {max(max_dists)}\n")
 
     end_time = time.time()
     print(F"Time to complete: {end_time - start_time}\n")
