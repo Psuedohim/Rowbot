@@ -49,6 +49,17 @@ To train the model, some system and Python dependencies must first be satisfied:
 
 **Python Dependencies**
 
+If desired, the exact development environment may be instantiated using Python version 3.7.7.
+More recent versions of Python have not been tested with this project.
+The exact Python packages that I used can be installed using the supplied `requirements.txt` file.
+
+From this repository's root folder, execute the following command.
+
+`pip install -r requirements.txt`
+
+
+Alternatively, the primary packages that are used include the following:
+
 - Scikit-Learn
 - Matplotlib
 - NumPy
@@ -58,6 +69,10 @@ To train the model, some system and Python dependencies must first be satisfied:
 
 After training five models with different parameters, the results of each can be compared.
 After visual inspection of the chosen model metrics, `model 0` was chosen to be tested on the rover.
+This choice was made using various assumptions about the trained machine learning model.
+Upon visual inspection of Model 0's graph, I judged that it generalized well to its training data.
+This judgement was made based on Model 0's very close `Test` and `Training` metrics.
+
 
 **_Note_:** Choosing the model with the "best" training results has not always yielded the best real-world results.
 As a personal anecdote: I was once amazed by the performance of a particular trained model.
@@ -67,6 +82,7 @@ As soon as I allowed Rowbot to roam on its own, it drove directly towards the cl
 No matter where I started the rover, it would drive towards the closest object.
 Moral of the story: the following results are somewhat arbitrary.
 
+
 |         Mean Squared Error          |         Mean Absolute Error         |
 | :---------------------------------: | :---------------------------------: |
 | ![](assets/AI_Rowbot_ML/M0_MSE.png) | ![](assets/AI_Rowbot_ML/M0_MAE.png) |
@@ -75,7 +91,10 @@ Moral of the story: the following results are somewhat arbitrary.
 | ![](assets/AI_Rowbot_ML/M3_MSE.png) | ![](assets/AI_Rowbot_ML/M3_MAE.png) |
 | ![](assets/AI_Rowbot_ML/M4_MSE.png) | ![](assets/AI_Rowbot_ML/M4_MAE.png) |
 
-## Current Progress
+
+## Progress at time of Testing
+
+This was Rowbot during the carrying out of the above tests.
 
 ![Whole Rover](assets/wholeView.JPG)
 
