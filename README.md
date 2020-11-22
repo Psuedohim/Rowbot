@@ -13,6 +13,9 @@ The data from these sensors is fed directly into a machine learning (ML) model t
 After processing the input data, the ML model directly outputs steering instructions.
 This approach is known as end-to-end since the ML model handles everything from input through output.
 
+For a more traditional approach to robot motion planning using Kalman filtering, 
+    see [Rowbot](https://github.com/MiguelAgueda/Rowbot).
+
 ## Training the Model
 
 ### Collecting Data
